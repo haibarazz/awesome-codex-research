@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "autodl-remote": {
+      "cwd": ".",
+      "command": "node",
+      "args": ["./mcp/server.mjs"]
+    }
+  }
+}

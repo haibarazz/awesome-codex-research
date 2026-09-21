@@ -1,0 +1,49 @@
+{
+  "name": "autodl-remote",
+  "version": "0.9.0+codex.20260715093031",
+  "description": "SSH CLI and MCP tools for AutoDL accounts, commands, files, jobs, fleets, tmux, dashboards, and shutdown.",
+  "author": {
+    "name": "haibarazz",
+    "url": "https://github.com/haibarazz/AutoDL-Remote"
+  },
+  "homepage": "https://github.com/haibarazz/AutoDL-Remote",
+  "repository": "https://github.com/haibarazz/AutoDL-Remote",
+  "license": "MIT",
+  "keywords": [
+    "autodl",
+    "ssh",
+    "remote-execution",
+    "remote-jobs",
+    "tmux",
+    "rsync",
+    "mcp",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "AutoDL Remote",
+    "shortDescription": "Control AutoDL over SSH from local Codex.",
+    "longDescription": "Provides a local SSH CLI plus standardized MCP tools for account and fleet management, remote command execution, optional tmux-backed long jobs, explicit file upload/download, remote job/run tracking, read-only dashboard generation, and guarded shutdown handling. Codex decides what to inspect, push, pull, and run.",
+    "developerName": "haibarazz",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Interactive"
+    ],
+    "websiteURL": "https://github.com/haibarazz/AutoDL-Remote",
+    "privacyPolicyURL": "https://github.com/haibarazz/AutoDL-Remote#security-notes",
+    "termsOfServiceURL": "https://github.com/haibarazz/AutoDL-Remote#license",
+    "defaultPrompt": [
+      "Use AutoDL Remote to inspect my remote project.",
+      "Upload this edited file to AutoDL and run training.",
+      "Tail the latest AutoDL training log.",
+      "Run a long AutoDL training job in tmux and show the live pane output.",
+      "Check the status of my detached AutoDL job.",
+      "Show a read-only dashboard for my AutoDL devices and runs.",
+      "Shut down the remote AutoDL machine when the run is finished."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "autodl-remote",
+  "version": "0.9.0",
+  "description": "SSH CLI and MCP tools for AutoDL accounts, commands, files, jobs, fleets, tmux, dashboards, and shutdown.",
+  "author": {
+    "name": "haibarazz",
+    "url": "https://github.com/haibarazz/AutoDL-Remote"
+  },
+  "homepage": "https://github.com/haibarazz/AutoDL-Remote",
+  "repository": "https://github.com/haibarazz/AutoDL-Remote",
+  "license": "MIT",
+  "keywords": [
+    "autodl",
+    "ssh",
+    "remote-execution",
+    "remote-jobs",
+    "tmux",
+    "rsync",
+    "mcp"
+  ],
+  "mcpServers": {
+    "autodl-remote": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"
+      ]
+    }
+  }
+}

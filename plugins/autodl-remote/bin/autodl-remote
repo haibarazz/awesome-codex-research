@@ -1,0 +1,2789 @@
+#!/usr/bin/env bash
+set -u
+
+PROGRAM="autodl-remote"
+PROGRAM_VERSION="0.9.0"
+APP_DIR="$HOME/.autodl-remote"
+ACCOUNTS_DIR="$APP_DIR/accounts"
+DEFAULT_ACCOUNT_FILE="$APP_DIR/default-account"
+CONFIG_FILE=".autodl-remote.conf"
+HISTORY_DIR=".autodl-remote"
+KEYCHAIN_SERVICE="autodl-remote"
+TAIL_MAX_BYTES="${AUTODL_REMOTE_TAIL_MAX_BYTES:-65536}"
+SSH_CONNECT_TIMEOUT="${AUTODL_REMOTE_CONNECT_TIMEOUT:-10}"
+SSH_CONNECTION_ATTEMPTS="${AUTODL_REMOTE_CONNECTION_ATTEMPTS:-2}"
+SSH_MASTER_LOCK_TIMEOUT="${AUTODL_REMOTE_MASTER_LOCK_TIMEOUT:-}"
+SSH_MONITOR_TIMEOUT="${AUTODL_REMOTE_MONITOR_TIMEOUT:-30}"
+
+die() {
+  printf '%s: %s\n' "$PROGRAM" "$*" >&2
+  exit 2
+}
+
+info() {
+  printf '%s\n' "$*"
+}
+
+usage() {
+  cat <<'EOF'
+usage: autodl-remote <command> [options]
+
+general:
+  --version
+  version
+
+account:
+  account add <name> [--target root@host | --host host --user root] [--port 22] [--key path] [--auth prompt|keychain|ssh-key] [--default-remote path]
+  account list
+  account show <name>
+  account use <name>
+  account test [name]
+  account password-save <name>
+  account password-delete <name>
+
+project:
+  bind [--account name] --remote /remote/project/root
+  doctor
+  model-dir [--mkdir]
+  fleet create <name>
+  fleet add <fleet> <device> [--account name] [--remote path] [--tags tags]
+  fleet list
+  fleet status [fleet]
+  dashboard [--fleet name] [--output path] [--open] [--watch seconds] [--lines 120]
+  tmux check [--account name] [--remote path]
+  tmux install [--account name] [--remote path]
+  tmux list [--account name] [--remote path]
+  tmux capture [--account name] [--remote path] [--lines 120] <session>
+  tmux attach-cmd [--account name] [--remote path] <session>
+  tmux kill [--account name] [--remote path] <session>
+
+remote:
+  exec [--account name] [--remote path] [--detach|--tmux] [--cwd path] [--name name] [--replace] [--model name] [--tag k=v] [--stage stage] [--purpose text] [--script local_script] [--stdin] [--allow-dangerous] -- <command>
+  put-run <local-path>... -- <command>
+  put [--account name] [--remote path] <local-path> [remote-path]
+  get [--account name] [--remote path] <remote-path> [local-path]
+  sync-up [--account name] [--remote path] <local-path> [remote-path]
+  sync-down [--account name] [--remote path] <remote-path> [local-path]
+  tree [--account name] [--remote path] [remote-path] [--depth 3] [--limit 500]
+  ls [--account name] [--remote path] [remote-path]
+  cat [--account name] [--remote path] [--lines 200] -- <remote-path>
+  tail [--account name] [--remote path] [--lines 120] [--follow] -- <remote-path>
+  job list
+  job status <name>
+  job stop <name>
+  job tail [--lines 120] [--follow] <name>
+  run submit [metadata/options] -- <command>
+  run list
+  run status <name>
+  run stop <name>
+  run tail [--lines 120] [--follow] <name>
+  run note <name> [--model name] [--tag k=v] [--stage stage] [--purpose text] [--output path]
+  shutdown [--wait seconds]
+  shell
+  history [--lines 20]
+
+EOF
+}
+
+cmd_version() {
+  printf '%s %s\n' "$PROGRAM" "$PROGRAM_VERSION"
+}
+
+shell_quote() {
+  printf '%q' "$1"
+}
+
+shell_quote_argv() {
+  local arg output=""
+  for arg in "$@"; do
+    output="${output:+$output }$(shell_quote "$arg")"
+  done
+  printf '%s' "$output"
+}
+
+strip_quotes() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  value="${value%%#*}"
+  value="${value%"${value##*[![:space:]]}"}"
+  case "$value" in
+    \"*\") value="${value#\"}"; value="${value%\"}" ;;
+    \'*\') value="${value#\'}"; value="${value%\'}" ;;
+  esac
+  printf '%s' "$value"
+}
+
+json_escape() {
+  sed 's/\\/\\\\/g; s/"/\\"/g' <<EOF
+$1
+EOF
+}
+
+html_escape() {
+  sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g' <<EOF
+$1
+EOF
+}
+
+valid_name() {
+  case "$1" in
+    ""|*/*|*..*|*[\ \	]*) return 1 ;;
+  esac
+  return 0
+}
+
+append_csv() {
+  local current="$1" value="$2"
+  if [ -n "$current" ]; then
+    printf '%s,%s\n' "$current" "$value"
+  else
+    printf '%s\n' "$value"
+  fi
+}
+
+ensure_app_dirs() {
+  mkdir -p "$ACCOUNTS_DIR" "$APP_DIR"
+}
+
+account_path() {
+  local name="$1"
+  valid_name "$name" || die "Invalid account name: $name"
+  ensure_app_dirs
+  printf '%s/%s.conf\n' "$ACCOUNTS_DIR" "$name"
+}
+
+config_get_from() {
+  local file="$1" key="$2"
+  awk -F= -v key="$key" '
+    $0 ~ "^[[:space:]]*" key "[[:space:]]*=" {
+      sub(/^[^=]*=/, "", $0)
+      print $0
+      exit
+    }
+  ' "$file" | while IFS= read -r line; do strip_quotes "$line"; done
+}
+
+find_project_config() {
+  if [ -n "${AUTODL_REMOTE_CONFIG:-}" ]; then
+    [ -f "$AUTODL_REMOTE_CONFIG" ] || die "AUTODL_REMOTE_CONFIG points to a missing file: $AUTODL_REMOTE_CONFIG"
+    printf '%s\n' "$AUTODL_REMOTE_CONFIG"
+    return 0
+  fi
+
+  local dir
+  dir="$(pwd)"
+  while :; do
+    if [ -f "$dir/$CONFIG_FILE" ]; then
+      printf '%s\n' "$dir/$CONFIG_FILE"
+      return 0
+    fi
+    [ "$dir" = "/" ] && break
+    dir="$(dirname "$dir")"
+  done
+  die "No $CONFIG_FILE found. Run 'autodl-remote bind --account <name> --remote <path>'."
+}
+
+validate_remote_root() {
+  local root="${1%/}"
+  [ "${root#/}" != "$root" ] || die "remote path must be absolute: $root"
+  [ "$root" != "/" ] || die "remote path is too broad: /"
+  case "$root" in
+    *"/../"*|*/..) die "remote path cannot contain '..': $root" ;;
+  esac
+}
+
+write_history() {
+  local action="$1" detail="$2" file escaped
+  mkdir -p "$PROJECT_ROOT/$HISTORY_DIR"
+  file="$PROJECT_ROOT/$HISTORY_DIR/history.jsonl"
+  escaped="$(json_escape "$detail")"
+  printf '{"ts":"%s","action":"%s","detail":"%s"}\n' "$(date +%Y-%m-%dT%H:%M:%S%z)" "$action" "$escaped" >> "$file"
+}
+
+sanitize_name() {
+  local name="$1"
+  name="$(printf '%s' "$name" | sed 's/[^A-Za-z0-9_.-]/-/g')"
+  [ -n "$name" ] || name="job-$(date +%Y%m%d-%H%M%S)"
+  printf '%s\n' "$name"
+}
+
+config_quote() {
+  sed 's/\\/\\\\/g; s/"/\\"/g' <<EOF
+$1
+EOF
+}
+
+default_model_dir() {
+  case "$REMOTE_ROOT" in
+    /root/autodl-tmp|/root/autodl-tmp/*) printf '%s\n' "/root/autodl-tmp/models" ;;
+    *) printf '%s\n' "$REMOTE_ROOT/models" ;;
+  esac
+}
+
+ensure_project_conventions() {
+  local dir file
+  dir="$PROJECT_ROOT/$HISTORY_DIR"
+  file="$dir/CONVENTIONS.md"
+  mkdir -p "$dir"
+  [ -f "$file" ] && return 0
+  cat > "$file" <<EOF
+# AutoDL Remote Conventions
+
+This file is created locally by \`autodl-remote\` to record project-specific remote workflow conventions.
+
+## Runtime
+
+- Activate command: \`<fill me, e.g. conda activate env or source .venv/bin/activate>\`
+- Python command: \`python\`
+- Install packages: ask before installing
+
+## Remote Paths
+
+- Remote root: \`$REMOTE_ROOT\`
+- Model dir: \`$PROJECT_MODEL_DIR\`
+- Data dir: \`<fill me>\`
+- Output dir: \`<fill me>\`
+
+## Sync Rules
+
+- Edit code locally first, then upload selected files.
+- Do not download models, datasets, checkpoints, or large outputs unless explicitly asked.
+- Prefer remote \`cat\`, \`tail\`, \`ls\`, and \`tree\` before downloading files.
+
+## Remote Execution
+
+- Long task backend: normal detach by default; use \`tmux\` when live pane monitoring or multiple parallel runs are useful.
+
+## Notes
+
+- Add project-specific notes here.
+EOF
+}
+
+jobs_dir() {
+  printf '%s/%s/jobs\n' "$PROJECT_ROOT" "$HISTORY_DIR"
+}
+
+job_path() {
+  local name="$1"
+  valid_name "$name" || die "Invalid job name: $name"
+  printf '%s/%s.conf\n' "$(jobs_dir)" "$name"
+}
+
+write_job() {
+  local name="$1" pid="$2" log="$3" status_path="$4" cwd="$5" command="$6" model="${7:-}" tags="${8:-}" purpose="${9:-}" stage="${10:-}" outputs="${11:-}" backend="${12:-detach}" tmux_session="${13:-}" tmux_socket="${14:-}" process_group="${15:-false}" file
+  mkdir -p "$(jobs_dir)"
+  file="$(job_path "$name")"
+  cat > "$file" <<EOF
+NAME="$(config_quote "$name")"
+PID="$(config_quote "$pid")"
+ACCOUNT="$(config_quote "$ACCOUNT_NAME")"
+REMOTE_ROOT="$(config_quote "$REMOTE_ROOT")"
+LOG_PATH="$(config_quote "$log")"
+STATUS_PATH="$(config_quote "$status_path")"
+CWD="$(config_quote "$cwd")"
+STARTED_AT="$(date +%Y-%m-%dT%H:%M:%S%z)"
+COMMAND="$(config_quote "$command")"
+MODEL="$(config_quote "$model")"
+TAGS="$(config_quote "$tags")"
+PURPOSE="$(config_quote "$purpose")"
+STAGE="$(config_quote "$stage")"
+OUTPUTS="$(config_quote "$outputs")"
+BACKEND="$(config_quote "$backend")"
+TMUX_SESSION="$(config_quote "$tmux_session")"
+TMUX_SOCKET="$(config_quote "$tmux_socket")"
+PROCESS_GROUP="$(config_quote "$process_group")"
+EOF
+}
+
+job_get() {
+  local file="$1" key="$2"
+  config_get_from "$file" "$key"
+}
+
+config_set_in_file() {
+  local file="$1" key="$2" value="$3" quoted tmp
+  quoted="$(config_quote "$value")"
+  tmp="$file.tmp"
+  awk -F= -v key="$key" -v quoted="$quoted" '
+    BEGIN { done=0 }
+    $1 == key {
+      if (!done) {
+        print key "=\"" quoted "\""
+        done=1
+      }
+      next
+    }
+    { print }
+    END {
+      if (!done) print key "=\"" quoted "\""
+    }
+  ' "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
+
+apply_context_override() {
+  local account="${1:-}" remote="${2:-}"
+  if [ -n "$account" ]; then
+    load_account "$account"
+    PROJECT_ACCOUNT="$ACCOUNT_NAME"
+    if [ -z "$remote" ] && [ -n "$ACCOUNT_DEFAULT_REMOTE" ]; then
+      remote="$ACCOUNT_DEFAULT_REMOTE"
+    fi
+  fi
+  if [ -n "$remote" ]; then
+    REMOTE_ROOT="${remote%/}"
+    validate_remote_root "$REMOTE_ROOT"
+    PROJECT_MODEL_DIR="$(default_model_dir)"
+  fi
+}
+
+fleet_root() {
+  printf '%s/%s/fleets\n' "$PROJECT_ROOT" "$HISTORY_DIR"
+}
+
+fleet_dir() {
+  local name="$1"
+  valid_name "$name" || die "Invalid fleet name: $name"
+  printf '%s/%s\n' "$(fleet_root)" "$name"
+}
+
+fleet_device_path() {
+  local fleet="$1" device="$2"
+  valid_name "$device" || die "Invalid device name: $device"
+  printf '%s/%s.conf\n' "$(fleet_dir "$fleet")" "$device"
+}
+
+device_get() {
+  local file="$1" key="$2"
+  config_get_from "$file" "$key"
+}
+
+apply_job_context() {
+  local file="$1" account remote
+  account="$(job_get "$file" ACCOUNT)"
+  remote="$(job_get "$file" REMOTE_ROOT)"
+  [ -n "$account" ] || account="${PROJECT_BOUND_ACCOUNT:-$PROJECT_ACCOUNT}"
+  [ -n "$remote" ] || remote="${PROJECT_BOUND_REMOTE_ROOT:-$REMOTE_ROOT}"
+  apply_context_override "$account" "$remote"
+}
+
+job_status_payload() {
+  local pid="$1" status_path="$2"
+  ssh_capture "if [ -f $(shell_quote "$status_path") ]; then cat $(shell_quote "$status_path"); elif kill -0 $(shell_quote "$pid") 2>/dev/null; then printf 'status=running\npid=%s\n' $(shell_quote "$pid"); else printf 'status=unknown\npid=%s\n' $(shell_quote "$pid"); fi; if kill -0 $(shell_quote "$pid") 2>/dev/null; then echo alive=yes; else echo alive=no; fi"
+}
+
+job_status_from_payload() {
+  local output="$1" status alive
+  status="$(printf '%s\n' "$output" | awk -F= '$1=="status"{print $2; exit}')"
+  alive="$(printf '%s\n' "$output" | awk -F= '$1=="alive"{print $2; exit}')"
+  [ -n "$status" ] || status="unknown"
+  if [ "$alive" = "yes" ] && [ "$status" = "unknown" ]; then
+    status="running"
+  elif [ "$alive" = "no" ] && [ "$status" = "running" ]; then
+    status="lost"
+  fi
+  printf '%s\n' "$status"
+}
+
+job_remote_status_summary() {
+  local file="$1" pid status_path output rc
+  apply_job_context "$file"
+  pid="$(job_get "$file" PID)"
+  status_path="$(job_get "$file" STATUS_PATH)"
+  output="$(job_status_payload "$pid" "$status_path" 2>/dev/null)"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    printf 'unreachable\n'
+    return 0
+  fi
+  job_status_from_payload "$output"
+}
+
+remote_probe() {
+  local output rc
+  output="$(ssh_capture "root=$(shell_quote "$REMOTE_ROOT"); printf 'online=yes\n'; printf 'host='; hostname 2>/dev/null || echo unknown; printf 'remote_root=%s\n' \"\$root\"; printf 'disk='; df -h \"\$root\" 2>/dev/null | awk 'NR==2{print \$3 \"/\" \$2 \" \" \$5}' || echo unknown; if command -v nvidia-smi >/dev/null 2>&1; then printf 'gpu='; nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -n 1 | awk -F, '{gsub(/^ +| +$/, \"\", \$1); gsub(/^ +| +$/, \"\", \$2); gsub(/^ +| +$/, \"\", \$3); gsub(/^ +| +$/, \"\", \$4); print \$1 \" \" \$2 \"/\" \$3 \" MiB \" \$4 \"%\"}'; else echo 'gpu=unavailable'; fi; printf 'processes='; pgrep -af 'python|torchrun|accelerate' 2>/dev/null | head -n 3 | tr '\n' '|' | sed 's/|$//'; printf '\n'" 2>&1)"
+  rc=$?
+  if [ "$rc" -eq 0 ]; then
+    printf '%s\n' "$output"
+  else
+    printf 'online=no\n'
+    printf 'error=%s\n' "$(printf '%s' "$output" | head -n 1)"
+  fi
+}
+
+kv_get() {
+  local data="$1" key="$2"
+  printf '%s\n' "$data" | awk -F= -v key="$key" '$1==key{print substr($0, length(key)+2); exit}'
+}
+
+load_account() {
+  local name="$1" path
+  valid_name "$name" || die "Invalid account name: $name"
+  path="$(account_path "$name")"
+  [ -f "$path" ] || die "Account not found: $name"
+
+  ACCOUNT_NAME="$name"
+  ACCOUNT_FILE="$path"
+  ACCOUNT_HOST="$(config_get_from "$path" HOST)"
+  ACCOUNT_USER="$(config_get_from "$path" USER)"
+  ACCOUNT_TARGET="$(config_get_from "$path" TARGET)"
+  ACCOUNT_PORT="$(config_get_from "$path" PORT)"
+  ACCOUNT_KEY="$(config_get_from "$path" KEY)"
+  ACCOUNT_AUTH="$(config_get_from "$path" AUTH)"
+  ACCOUNT_DEFAULT_REMOTE="$(config_get_from "$path" DEFAULT_REMOTE)"
+
+  if [ -z "$ACCOUNT_TARGET" ]; then
+    [ -n "$ACCOUNT_HOST" ] || die "Account $name is missing HOST/TARGET."
+    [ -n "$ACCOUNT_USER" ] || die "Account $name is missing USER/TARGET."
+    ACCOUNT_TARGET="$ACCOUNT_USER@$ACCOUNT_HOST"
+  fi
+  ACCOUNT_PORT="${ACCOUNT_PORT:-22}"
+  ACCOUNT_KEY="${ACCOUNT_KEY:-}"
+  ACCOUNT_AUTH="${ACCOUNT_AUTH:-prompt}"
+  ACCOUNT_DEFAULT_REMOTE="${ACCOUNT_DEFAULT_REMOTE:-}"
+
+  case "$ACCOUNT_AUTH" in
+    prompt|keychain|ssh-key) ;;
+    *) die "Account $name has invalid AUTH: $ACCOUNT_AUTH" ;;
+  esac
+}
+
+default_account() {
+  if [ -f "$DEFAULT_ACCOUNT_FILE" ]; then
+    sed -n '1p' "$DEFAULT_ACCOUNT_FILE"
+    return 0
+  fi
+  return 1
+}
+
+load_project() {
+  CONFIG_PATH="$(find_project_config)"
+  PROJECT_ROOT="$(cd "$(dirname "$CONFIG_PATH")" && pwd)"
+  PROJECT_ACCOUNT="$(config_get_from "$CONFIG_PATH" ACCOUNT)"
+  REMOTE_ROOT="$(config_get_from "$CONFIG_PATH" REMOTE_ROOT)"
+  PROJECT_MODEL_DIR="$(config_get_from "$CONFIG_PATH" MODEL_DIR)"
+
+  [ -n "$PROJECT_ACCOUNT" ] || die "$CONFIG_FILE is missing ACCOUNT."
+  load_account "$PROJECT_ACCOUNT"
+
+  [ -n "$REMOTE_ROOT" ] || REMOTE_ROOT="$ACCOUNT_DEFAULT_REMOTE"
+  [ -n "$REMOTE_ROOT" ] || die "$CONFIG_FILE is missing REMOTE_ROOT."
+  REMOTE_ROOT="${REMOTE_ROOT%/}"
+  validate_remote_root "$REMOTE_ROOT"
+  [ -n "$PROJECT_MODEL_DIR" ] || PROJECT_MODEL_DIR="$(default_model_dir)"
+  case "$PROJECT_MODEL_DIR" in
+    /*) ;;
+    *) PROJECT_MODEL_DIR="$REMOTE_ROOT/${PROJECT_MODEL_DIR#./}" ;;
+  esac
+  PROJECT_MODEL_DIR="${PROJECT_MODEL_DIR%/}"
+  validate_remote_root "$PROJECT_MODEL_DIR"
+  PROJECT_BOUND_ACCOUNT="$PROJECT_ACCOUNT"
+  PROJECT_BOUND_REMOTE_ROOT="$REMOTE_ROOT"
+  ensure_project_conventions
+}
+
+ssh_common_args() {
+  local control_master="${1:-no}" control_path
+  control_path="$(ssh_control_path)"
+  validate_ssh_timeouts
+  SSH_ARGS=(-p "$ACCOUNT_PORT" -o "ConnectTimeout=$SSH_CONNECT_TIMEOUT" -o "ConnectionAttempts=$SSH_CONNECTION_ATTEMPTS" -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -o "ControlMaster=$control_master" -o "ControlPath=$control_path")
+  [ "$control_master" != "yes" ] || SSH_ARGS+=(-o ControlPersist=600)
+  [ -n "$ACCOUNT_KEY" ] && SSH_ARGS+=(-i "$ACCOUNT_KEY")
+  if [ "$control_master" != "yes" ] || { [ "$ACCOUNT_AUTH" != "keychain" ] && [ "$ACCOUNT_AUTH" != "prompt" ]; }; then
+    SSH_ARGS+=(-o BatchMode=yes)
+  fi
+}
+
+scp_common_args() {
+  local control_path
+  control_path="$(ssh_control_path)"
+  validate_ssh_timeouts
+  SCP_ARGS=(-P "$ACCOUNT_PORT" -o "ConnectTimeout=$SSH_CONNECT_TIMEOUT" -o "ConnectionAttempts=$SSH_CONNECTION_ATTEMPTS" -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -o ControlMaster=no -o "ControlPath=$control_path")
+  [ -n "$ACCOUNT_KEY" ] && SCP_ARGS+=(-i "$ACCOUNT_KEY")
+  SCP_ARGS+=(-o BatchMode=yes)
+}
+
+rsync_ssh_command() {
+  local cmd control_path
+  control_path="$(ssh_control_path)"
+  validate_ssh_timeouts
+  cmd="ssh -p $(shell_quote "$ACCOUNT_PORT") -o ConnectTimeout=$(shell_quote "$SSH_CONNECT_TIMEOUT") -o ConnectionAttempts=$(shell_quote "$SSH_CONNECTION_ATTEMPTS") -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -o ControlMaster=no -o ControlPath=$(shell_quote "$control_path")"
+  [ -n "$ACCOUNT_KEY" ] && cmd="$cmd -i $(shell_quote "$ACCOUNT_KEY")"
+  cmd="$cmd -o BatchMode=yes"
+  printf '%s\n' "$cmd"
+}
+
+ssh_control_dir() {
+  local base
+  base="${AUTODL_REMOTE_CONTROL_DIR:-/tmp/autodl-remote-${UID:-user}}"
+  mkdir -p "$base"
+  chmod 700 "$base" 2>/dev/null || true
+  printf '%s\n' "$base"
+}
+
+ssh_control_path() {
+  local account_id connection_id
+  account_id="$(printf '%s\n' "$ACCOUNT_NAME" | cksum | awk '{print $1}')"
+  connection_id="$(printf '%s\n' "$ACCOUNT_TARGET:$ACCOUNT_PORT" | cksum | awk '{print $1}')"
+  printf '%s/ssh-%s-%s\n' "$(ssh_control_dir)" "$account_id" "$connection_id"
+}
+
+validate_ssh_timeouts() {
+  case "$SSH_CONNECT_TIMEOUT" in
+    ""|0|*[!0-9]*) die "AUTODL_REMOTE_CONNECT_TIMEOUT must be a positive integer" ;;
+  esac
+  case "$SSH_CONNECTION_ATTEMPTS" in
+    ""|0|*[!0-9]*) die "AUTODL_REMOTE_CONNECTION_ATTEMPTS must be a positive integer" ;;
+  esac
+  case "$SSH_MASTER_LOCK_TIMEOUT" in
+    "") ;;
+    0|*[!0-9]*) die "AUTODL_REMOTE_MASTER_LOCK_TIMEOUT must be a positive integer" ;;
+  esac
+  case "$SSH_MONITOR_TIMEOUT" in
+    ""|0|*[!0-9]*) die "AUTODL_REMOTE_MONITOR_TIMEOUT must be a positive integer" ;;
+  esac
+}
+
+ssh_master_lock_timeout() {
+  local minimum
+  if [ -n "$SSH_MASTER_LOCK_TIMEOUT" ]; then
+    printf '%s\n' "$SSH_MASTER_LOCK_TIMEOUT"
+    return 0
+  fi
+  minimum=$((SSH_CONNECT_TIMEOUT * SSH_CONNECTION_ATTEMPTS * 2 + 5))
+  [ "$minimum" -ge 60 ] || minimum=60
+  printf '%s\n' "$minimum"
+}
+
+path_mtime() {
+  stat -f '%m' "$1" 2>/dev/null || stat -c '%Y' "$1" 2>/dev/null
+}
+
+ssh_master_check() {
+  local control_path
+  control_path="$(ssh_control_path)"
+  ssh -p "$ACCOUNT_PORT" -o "ConnectTimeout=$SSH_CONNECT_TIMEOUT" -o ControlMaster=no -o "ControlPath=$control_path" -O check "$ACCOUNT_TARGET" >/dev/null 2>&1
+}
+
+acquire_ssh_master_lock() {
+  local lock_dir="$1" started now owner owner_command lock_mtime lock_timeout
+  started="$(date +%s)"
+  lock_timeout="$(ssh_master_lock_timeout)"
+  while ! mkdir "$lock_dir" 2>/dev/null; do
+    if [ -f "$lock_dir/pid" ]; then
+      owner="$(sed -n '1p' "$lock_dir/pid" 2>/dev/null || true)"
+      case "$owner" in
+        ""|*[!0-9]*) owner="" ;;
+        *)
+          owner_command="$(ps -p "$owner" -o command= 2>/dev/null || true)"
+          if ! kill -0 "$owner" 2>/dev/null || [ -z "$owner_command" ] || [ "${owner_command#*autodl-remote}" = "$owner_command" ]; then
+            rm -rf "$lock_dir"
+            continue
+          fi
+          ;;
+      esac
+    else
+      owner=""
+    fi
+    if [ -z "$owner" ]; then
+      now="$(date +%s)"
+      lock_mtime="$(path_mtime "$lock_dir" || printf '%s\n' "$now")"
+      if [ $((now - lock_mtime)) -ge "$lock_timeout" ]; then
+        rm -rf "$lock_dir"
+        continue
+      fi
+    fi
+    now="$(date +%s)"
+    if [ $((now - started)) -ge "$lock_timeout" ]; then
+      printf '%s: timed out waiting for SSH master lock: %s\n' "$PROGRAM" "$lock_dir" >&2
+      return 1
+    fi
+    sleep 0.1
+  done
+  printf '%s\n' "$$" > "$lock_dir/pid.tmp"
+  mv "$lock_dir/pid.tmp" "$lock_dir/pid"
+}
+
+ensure_ssh_master() (
+  local control_path lock_dir attempt rc=1
+  validate_ssh_timeouts
+  ssh_master_check && return 0
+  control_path="$(ssh_control_path)"
+  lock_dir="$control_path.lock"
+  acquire_ssh_master_lock "$lock_dir" || return 1
+  trap 'rm -rf "$lock_dir"' EXIT
+  trap 'exit 129' HUP
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  ssh_master_check && return 0
+
+  for attempt in 1 2; do
+    rm -f "$control_path"
+    ssh_common_args yes
+    if run_transport_timed "$SSH_CONNECT_TIMEOUT" ssh -MNf "${SSH_ARGS[@]}" "$ACCOUNT_TARGET"; then
+      ssh_master_check && return 0
+    else
+      rc=$?
+    fi
+    ssh_master_check && return 0
+    sleep 0.2
+  done
+  printf '%s: failed to establish shared SSH master for %s\n' "$PROGRAM" "$ACCOUNT_NAME" >&2
+  return "$rc"
+)
+
+keychain_password() {
+  command -v security >/dev/null 2>&1 || die "macOS security command is not available."
+  security find-generic-password -a "$ACCOUNT_NAME" -s "$KEYCHAIN_SERVICE" -w 2>/dev/null
+}
+
+expect_with_password() {
+  command -v expect >/dev/null 2>&1 || die "Account uses keychain auth, but expect is not available."
+  local password="$1" timeout_seconds="$2"
+  shift 2
+  AUTODL_REMOTE_PASSWORD="$password" AUTODL_REMOTE_EXPECT_TIMEOUT="$timeout_seconds" expect -f /dev/stdin "$@" <<'EXPECT'
+    set timeout $env(AUTODL_REMOTE_EXPECT_TIMEOUT)
+    set password $env(AUTODL_REMOTE_PASSWORD)
+    log_user 0
+    spawn {*}$argv
+    log_user 1
+    expect {
+      -nocase -re "are you sure.*continue connecting" {
+        send "yes\r"
+        exp_continue -continue_timer
+      }
+      -nocase -re "yes/no" {
+        send "yes\r"
+        exp_continue -continue_timer
+      }
+      -nocase -re "password:" {
+        send "$password\r"
+        exp_continue -continue_timer
+      }
+      timeout {
+        puts stderr "autodl-remote: SSH transport timed out"
+        set child_pid [exp_pid]
+        catch {close}
+        catch {exec kill -TERM $child_pid}
+        catch {wait}
+        exit 124
+      }
+      eof
+    }
+    catch wait result
+    exit [lindex $result 3]
+EXPECT
+}
+
+terminate_descendants() {
+  local parent="$1" signal="$2" child children
+  command -v pgrep >/dev/null 2>&1 || return 0
+  children="$(pgrep -P "$parent" 2>/dev/null || true)"
+  for child in $children; do
+    terminate_descendants "$child" "$signal"
+  done
+  for child in $children; do
+    kill "-$signal" "$child" 2>/dev/null || true
+  done
+}
+
+terminate_process_tree() {
+  local pid="$1" signal="$2" process_group="$3"
+  kill -0 "$pid" 2>/dev/null || return 0
+  if [ "$process_group" = "true" ]; then
+    kill "-$signal" -- "-$pid" 2>/dev/null || true
+  else
+    terminate_descendants "$pid" "$signal"
+    kill "-$signal" "$pid" 2>/dev/null || true
+  fi
+}
+
+run_command_with_timeout() (
+  local timeout_seconds="$1" pid="" watchdog="" sleeper="" marker="" timer_pid_file="" rc process_group=false
+  shift
+  cleanup_timeout_runner() {
+    if [ -n "$pid" ]; then
+      terminate_process_tree "$pid" TERM "$process_group"
+      sleep 0.1
+      terminate_process_tree "$pid" KILL "$process_group"
+    fi
+    [ -z "$sleeper" ] || kill "$sleeper" 2>/dev/null || true
+    [ -z "$watchdog" ] || kill "$watchdog" 2>/dev/null || true
+    [ -z "$marker" ] || rm -f "$marker"
+    [ -z "$timer_pid_file" ] || rm -f "$timer_pid_file"
+  }
+  trap cleanup_timeout_runner EXIT
+  trap 'exit 129' HUP
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+
+  marker="$(mktemp "${TMPDIR:-/tmp}/autodl-remote-timeout.XXXXXX")" || die "mktemp failed"
+  timer_pid_file="$(mktemp "${TMPDIR:-/tmp}/autodl-remote-timer.XXXXXX")" || { rm -f "$marker"; die "mktemp failed"; }
+  rm -f "$marker"
+  rm -f "$timer_pid_file"
+  if command -v setsid >/dev/null 2>&1; then
+    setsid "$@" &
+    process_group=true
+  else
+    "$@" &
+  fi
+  pid=$!
+  (
+    sleep "$timeout_seconds" &
+    sleeper=$!
+    printf '%s\n' "$sleeper" > "$timer_pid_file"
+    wait "$sleeper" || exit 0
+    if kill -0 "$pid" 2>/dev/null; then
+      : > "$marker"
+      terminate_process_tree "$pid" TERM "$process_group"
+      sleep 1
+      terminate_process_tree "$pid" KILL "$process_group"
+    fi
+  ) </dev/null >/dev/null 2>&1 &
+  watchdog=$!
+  wait "$pid"
+  rc=$?
+  pid=""
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    [ -f "$timer_pid_file" ] && break
+    kill -0 "$watchdog" 2>/dev/null || break
+    sleep 0.01
+  done
+  if [ -f "$timer_pid_file" ]; then
+    sleeper="$(sed -n '1p' "$timer_pid_file" 2>/dev/null || true)"
+    case "$sleeper" in
+      ""|*[!0-9]*) ;;
+      *) kill "$sleeper" 2>/dev/null || true; sleeper="" ;;
+    esac
+  fi
+  kill "$watchdog" 2>/dev/null || true
+  wait "$watchdog" 2>/dev/null || true
+  watchdog=""
+  if [ -f "$marker" ]; then
+    printf '%s: transport timed out after %ss\n' "$PROGRAM" "$timeout_seconds" >&2
+    return 124
+  fi
+  return "$rc"
+)
+
+run_transport_timed() {
+  local timeout_seconds="$1" rc
+  shift
+  if [ "$ACCOUNT_AUTH" = "keychain" ]; then
+    local password
+    password="$(run_command_with_timeout "$timeout_seconds" keychain_password)"
+    rc=$?
+    [ "$rc" -eq 0 ] || { [ "$rc" -eq 124 ] && return 124; die "No Keychain password saved for account: $ACCOUNT_NAME"; }
+    expect_with_password "$password" "$timeout_seconds" "$@"
+  elif [ "$ACCOUNT_AUTH" = "ssh-key" ]; then
+    run_command_with_timeout "$timeout_seconds" "$@"
+  else
+    "$@"
+  fi
+}
+
+ssh_run() {
+  local command="$1"
+  ensure_ssh_master || return $?
+  ssh_common_args
+  ssh "${SSH_ARGS[@]}" "$ACCOUNT_TARGET" "$command"
+}
+
+ssh_capture() {
+  local command="$1"
+  ensure_ssh_master || return $?
+  ssh_common_args
+  run_command_with_timeout "$SSH_MONITOR_TIMEOUT" ssh "${SSH_ARGS[@]}" "$ACCOUNT_TARGET" "$command"
+}
+
+validate_tail_settings() {
+  local lines="$1"
+  case "$lines" in
+    ""|*[!0-9]*) die "--lines must be a non-negative integer" ;;
+  esac
+  case "$TAIL_MAX_BYTES" in
+    ""|0|*[!0-9]*) die "AUTODL_REMOTE_TAIL_MAX_BYTES must be a positive integer" ;;
+  esac
+}
+
+normalized_tail_filter_command() {
+  local lines="$1" awk_program
+  awk_program='{ sub(/\r$/, ""); gsub(/\r/, "\n"); gsub(sprintf("%c", 27) "\\[[0-?]*[ -/]*[@-~]", ""); print }'
+  printf 'LC_ALL=C awk %s | tail -n %s | tail -c %s' \
+    "$(shell_quote "$awk_program")" "$lines" "$TAIL_MAX_BYTES"
+}
+
+normalized_log_tail_command() {
+  local log="$1" lines="$2" input_bytes
+  input_bytes=$((TAIL_MAX_BYTES * 4))
+  printf 'tail -c %s %s | %s' \
+    "$input_bytes" "$(shell_quote "$log")" "$(normalized_tail_filter_command "$lines")"
+}
+
+remote_join() {
+  local path="${1:-.}"
+  if [ -z "$path" ] || [ "$path" = "." ]; then
+    printf '%s\n' "$REMOTE_ROOT"
+    return 0
+  fi
+  case "$path" in
+    /*)
+      validate_remote_root "$path"
+      printf '%s\n' "${path%/}"
+      ;;
+    ../*|*/../*|..)
+      die "path cannot escape remote root: $path"
+      ;;
+    *)
+      printf '%s/%s\n' "$REMOTE_ROOT" "${path#./}"
+      ;;
+  esac
+}
+
+remote_rel_for_local() {
+  local path="$1"
+  case "$path" in
+    /*)
+      if [ "${path#"$PROJECT_ROOT"/}" != "$path" ]; then
+        printf '%s\n' "${path#"$PROJECT_ROOT"/}"
+      else
+        basename "$path"
+      fi
+      ;;
+    *)
+      printf '%s\n' "${path#./}"
+      ;;
+  esac
+}
+
+local_join() {
+  local path="$1"
+  case "$path" in
+    /*) printf '%s\n' "$path" ;;
+    *) printf '%s/%s\n' "$PROJECT_ROOT" "${path#./}" ;;
+  esac
+}
+
+remote_has_rsync() {
+  ssh_capture "command -v rsync >/dev/null 2>&1" >/dev/null 2>&1
+}
+
+ensure_remote_dir() {
+  local dir="$1"
+  ssh_capture "mkdir -p $(shell_quote "$dir")" </dev/null >/dev/null
+}
+
+upload_local_file() {
+  local local_path="$1" remote_path="$2"
+  [ -f "$local_path" ] || die "Local script does not exist or is not a file: $local_path"
+  ensure_remote_dir "$(dirname "$remote_path")"
+  ensure_ssh_master || return $?
+  scp_common_args
+  scp "${SCP_ARGS[@]}" "$local_path" "$ACCOUNT_TARGET:$remote_path"
+}
+
+upload_stdin_to_remote() {
+  local remote_path="$1"
+  ensure_remote_dir "$(dirname "$remote_path")"
+  ensure_ssh_master || return $?
+  ssh_common_args
+  ssh "${SSH_ARGS[@]}" "$ACCOUNT_TARGET" "cat > $(shell_quote "$remote_path")"
+}
+
+upload_file_via_ssh() {
+  local local_path="$1" remote_path="$2"
+  [ -f "$local_path" ] || die "Local script does not exist or is not a file: $local_path"
+  upload_stdin_to_remote "$remote_path" < "$local_path"
+}
+
+tmux_socket_path() {
+  printf '%s/.autodl-remote/tmux/autodl.sock\n' "$REMOTE_ROOT"
+}
+
+tmux_missing_text() {
+  printf 'Remote tmux is missing. Please install tmux on the remote machine, or run: autodl-remote tmux install\n'
+}
+
+remote_tmux_capture() {
+  local session="$1" socket="$2" lines="$3" output rc
+  [ -n "$session" ] || { printf '[tmux session missing]\n'; return 1; }
+  [ -n "$socket" ] || socket="$(tmux_socket_path)"
+  output="$(ssh_capture "if ! command -v tmux >/dev/null 2>&1; then printf '%s\n' $(shell_quote "$(tmux_missing_text)"); exit 127; fi; if tmux -S $(shell_quote "$socket") has-session -t $(shell_quote "$session") 2>/dev/null; then tmux -S $(shell_quote "$socket") capture-pane -p -J -t $(shell_quote "$session:0.0") -S -$lines | $(normalized_tail_filter_command "$lines"); else printf '[tmux session missing] %s\n' $(shell_quote "$session"); exit 42; fi" 2>&1)"
+  rc=$?
+  printf '%s\n' "$output"
+  return "$rc"
+}
+
+strip_token_quotes() {
+  local value="$1"
+  value="${value%\"}"
+  value="${value#\"}"
+  value="${value%\'}"
+  value="${value#\'}"
+  printf '%s\n' "$value"
+}
+
+is_dangerous_rm_target() {
+  local target="$1" recursive="$2" cwd="${3:-$REMOTE_ROOT}" project_root autodl_tmp
+  target="$(strip_token_quotes "$target")"
+  [ -n "$target" ] || return 1
+
+  project_root="${REMOTE_ROOT%/}"
+  autodl_tmp="/root/autodl-tmp"
+
+  case "$target" in
+    "\$REMOTE_ROOT"|"\${REMOTE_ROOT}"|"\$PWD"|"\${PWD}") return 0 ;;
+  esac
+
+  [ "$target" = "/" ] && return 0
+  [ "$target" = "/*" ] && return 0
+
+  if [ "$recursive" = "true" ]; then
+    case "$target" in
+      "."|"./"|"./*"|"*"|"~"|"~/"|"~/*") return 0 ;;
+    esac
+  fi
+
+  while [ "${target%/}" != "$target" ] && [ "$target" != "/" ]; do
+    target="${target%/}"
+  done
+
+  if [ "$target" = "$project_root" ]; then
+    return 0
+  fi
+  if [ "$target" = "$project_root/*" ]; then
+    return 0
+  fi
+  if [ "$target" = "$autodl_tmp" ] || [ "$target" = "$autodl_tmp/*" ]; then
+    return 0
+  fi
+  if [ "$recursive" = "true" ] && [ "$target" = "$cwd" ]; then
+    return 0
+  fi
+  return 1
+}
+
+contains_dangerous_rm() {
+  local cmd="$1" cwd="${2:-$REMOTE_ROOT}" line token recursive
+  while IFS= read -r line; do
+    set -- $line
+    while [ $# -gt 0 ]; do
+      token="$(strip_token_quotes "$1")"
+      case "$token" in
+        sudo|command|builtin|nohup) shift ;;
+        env) shift; while [ $# -gt 0 ]; do case "$1" in *=*) shift ;; *) break ;; esac; done ;;
+        *=*) shift ;;
+        *) break ;;
+      esac
+    done
+    token="$(strip_token_quotes "${1:-}")"
+    [ "${token##*/}" = "rm" ] || continue
+    shift
+    recursive=false
+    while [ $# -gt 0 ]; do
+      token="$1"
+      shift
+      case "$token" in
+        --) break ;;
+        --*) continue ;;
+        -*) case "$token" in *r*|*R*) recursive=true ;; esac; continue ;;
+      esac
+      is_dangerous_rm_target "$token" "$recursive" "$cwd" && return 0
+    done
+    while [ $# -gt 0 ]; do
+      token="$1"
+      shift
+      is_dangerous_rm_target "$token" "$recursive" "$cwd" && return 0
+    done
+  done <<EOF
+$(printf '%s\n' "$cmd" | sed 's/[;&|]/\
+/g')
+EOF
+  return 1
+}
+
+contains_dangerous_system_command() {
+  local cmd="$1" line token command_name
+  while IFS= read -r line; do
+    set -- $line
+    while [ $# -gt 0 ]; do
+      token="$(strip_token_quotes "$1")"
+      case "$token" in
+        sudo|command|builtin|nohup) shift ;;
+        env) shift; while [ $# -gt 0 ]; do case "$1" in *=*) shift ;; *) break ;; esac; done ;;
+        *=*) shift ;;
+        *) break ;;
+      esac
+    done
+    [ $# -gt 0 ] || continue
+    token="$(strip_token_quotes "$1")"
+    command_name="${token##*/}"
+    case "$command_name" in
+      shutdown|reboot|poweroff|halt|mkfs|mkfs.*)
+        return 0
+        ;;
+      dd)
+        shift
+        while [ $# -gt 0 ]; do
+          token="$(strip_token_quotes "$1")"
+          case "$token" in if=*) return 0 ;; esac
+          shift
+        done
+        ;;
+    esac
+  done <<EOF
+$(printf '%s\n' "$cmd" | sed 's/[;&|]/\
+/g')
+EOF
+  return 1
+}
+
+dangerous_command_check() {
+  local cmd="$1" cwd="${2:-$REMOTE_ROOT}"
+  contains_dangerous_system_command "$cmd" && return 1
+  contains_dangerous_rm "$cmd" "$cwd" && return 1
+  return 0
+}
+
+cmd_account_add() {
+  local name="" target="" host="" user="" port="22" key="" auth="prompt" default_remote="" force=false
+  [ $# -gt 0 ] || die "account add requires a name"
+  name="$1"
+  shift
+  valid_name "$name" || die "Invalid account name: $name"
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --target) target="$2"; shift 2 ;;
+      --host) host="$2"; shift 2 ;;
+      --user) user="$2"; shift 2 ;;
+      --port) port="$2"; shift 2 ;;
+      --key) key="$2"; shift 2 ;;
+      --auth) auth="$2"; shift 2 ;;
+      --default-remote) default_remote="$2"; shift 2 ;;
+      --force) force=true; shift ;;
+      *) die "unknown account add option: $1" ;;
+    esac
+  done
+
+  if [ -z "$target" ]; then
+    if [ -z "$host" ] && [ -t 0 ]; then
+      printf 'host: '
+      read -r host
+    fi
+    if [ -z "$user" ] && [ -t 0 ]; then
+      printf 'user [root]: '
+      read -r user
+      user="${user:-root}"
+    fi
+    [ -n "$host" ] || die "account add requires --target or --host."
+    [ -n "$user" ] || user="root"
+    target="$user@$host"
+  fi
+
+  case "$auth" in
+    prompt|keychain|ssh-key) ;;
+    *) die "--auth must be prompt, keychain, or ssh-key" ;;
+  esac
+  [ -z "$default_remote" ] || validate_remote_root "$default_remote"
+  [ "$auth" != "ssh-key" ] || [ -n "$key" ] || die "--auth ssh-key requires --key"
+
+  local path
+  path="$(account_path "$name")"
+  [ ! -f "$path" ] || [ "$force" = "true" ] || die "Account already exists: $name. Use --force to overwrite."
+  cat > "$path" <<EOF
+TARGET="$target"
+PORT="$port"
+KEY="$key"
+AUTH="$auth"
+DEFAULT_REMOTE="$default_remote"
+EOF
+  chmod 600 "$path"
+  info "Saved account: $name"
+}
+
+cmd_account_list() {
+  ensure_app_dirs
+  local seen=false file name
+  if ls "$ACCOUNTS_DIR"/*.conf >/dev/null 2>&1; then
+    for file in "$ACCOUNTS_DIR"/*.conf; do
+      seen=true
+      name="$(basename "$file" .conf)"
+      if [ "$(default_account 2>/dev/null || true)" = "$name" ]; then
+        printf '* %s\n' "$name"
+      else
+        printf '  %s\n' "$name"
+      fi
+    done
+  fi
+  [ "$seen" = "true" ] || info "No accounts saved."
+}
+
+cmd_account_show() {
+  [ $# -gt 0 ] || die "account show requires a name"
+  load_account "$1"
+  info "name=$ACCOUNT_NAME"
+  info "target=$ACCOUNT_TARGET"
+  info "port=$ACCOUNT_PORT"
+  info "key=$ACCOUNT_KEY"
+  info "auth=$ACCOUNT_AUTH"
+  info "default_remote=$ACCOUNT_DEFAULT_REMOTE"
+}
+
+cmd_account_use() {
+  [ $# -gt 0 ] || die "account use requires a name"
+  load_account "$1"
+  ensure_app_dirs
+  printf '%s\n' "$ACCOUNT_NAME" > "$DEFAULT_ACCOUNT_FILE"
+  info "Default account: $ACCOUNT_NAME"
+}
+
+cmd_account_test() {
+  local name="${1:-}"
+  if [ -z "$name" ]; then
+    name="$(default_account)" || die "No default account. Run 'autodl-remote account use <name>'."
+  fi
+  load_account "$name"
+  info "Testing $ACCOUNT_NAME -> $ACCOUNT_TARGET:$ACCOUNT_PORT"
+  ssh_capture "printf 'host=' && hostname && printf 'pwd=' && pwd && printf 'rsync=' && { command -v rsync || true; }"
+}
+
+cmd_account_password_save() {
+  [ $# -gt 0 ] || die "account password-save requires a name"
+  load_account "$1"
+  command -v security >/dev/null 2>&1 || die "macOS security command is not available."
+  local password=""
+  if [ -n "${AUTODL_REMOTE_PASSWORD:-}" ]; then
+    password="$AUTODL_REMOTE_PASSWORD"
+  else
+    [ -t 0 ] || die "Set AUTODL_REMOTE_PASSWORD or run from an interactive terminal."
+    printf 'password for %s: ' "$ACCOUNT_NAME" >&2
+    stty -echo
+    read -r password
+    stty echo
+    printf '\n' >&2
+  fi
+  [ -n "$password" ] || die "Empty password not saved."
+  security add-generic-password -U -a "$ACCOUNT_NAME" -s "$KEYCHAIN_SERVICE" -w "$password" >/dev/null
+  local path
+  path="$(account_path "$ACCOUNT_NAME")"
+  if [ ! -f "$path" ]; then
+    local add_args=("$ACCOUNT_NAME" --target "$ACCOUNT_TARGET" --port "$ACCOUNT_PORT" --auth keychain --default-remote "$ACCOUNT_DEFAULT_REMOTE" --force)
+    [ -n "$ACCOUNT_KEY" ] && add_args+=(--key "$ACCOUNT_KEY")
+    cmd_account_add "${add_args[@]}" >/dev/null
+  else
+    awk -F= 'BEGIN{done=0} $1=="AUTH"{print "AUTH=\"keychain\""; done=1; next} {print} END{if(!done) print "AUTH=\"keychain\""}' "$path" > "$path.tmp"
+    mv "$path.tmp" "$path"
+    chmod 600 "$path"
+  fi
+  info "Saved password in macOS Keychain for account: $ACCOUNT_NAME"
+}
+
+cmd_account_password_delete() {
+  [ $# -gt 0 ] || die "account password-delete requires a name"
+  load_account "$1"
+  command -v security >/dev/null 2>&1 || die "macOS security command is not available."
+  security delete-generic-password -a "$ACCOUNT_NAME" -s "$KEYCHAIN_SERVICE" >/dev/null 2>&1 || true
+  info "Deleted Keychain password for account: $ACCOUNT_NAME"
+}
+
+cmd_account() {
+  [ $# -gt 0 ] || die "account requires a subcommand"
+  local sub="$1"
+  shift
+  case "$sub" in
+    add) cmd_account_add "$@" ;;
+    list|ls) cmd_account_list "$@" ;;
+    show) cmd_account_show "$@" ;;
+    use) cmd_account_use "$@" ;;
+    test) cmd_account_test "$@" ;;
+    password-save) cmd_account_password_save "$@" ;;
+    password-delete) cmd_account_password_delete "$@" ;;
+    *) die "unknown account command: $sub" ;;
+  esac
+}
+
+cmd_bind() {
+  local account="" remote="" force=false
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account="$2"; shift 2 ;;
+      --remote) remote="$2"; shift 2 ;;
+      --force) force=true; shift ;;
+      *) die "unknown bind option: $1" ;;
+    esac
+  done
+  if [ -z "$account" ]; then
+    account="$(default_account)" || die "bind requires --account or a default account."
+  fi
+  load_account "$account"
+  [ -n "$remote" ] || remote="$ACCOUNT_DEFAULT_REMOTE"
+  [ -n "$remote" ] || die "bind requires --remote."
+  remote="${remote%/}"
+  validate_remote_root "$remote"
+  [ ! -f "$CONFIG_FILE" ] || [ "$force" = "true" ] || die "$CONFIG_FILE already exists. Use --force to overwrite."
+  cat > "$CONFIG_FILE" <<EOF
+ACCOUNT="$ACCOUNT_NAME"
+REMOTE_ROOT="$remote"
+EOF
+  mkdir -p "$HISTORY_DIR"
+  info "Bound $(pwd) to $ACCOUNT_NAME:$remote"
+}
+
+cmd_doctor() {
+  load_project
+  info "Config: $CONFIG_PATH"
+  info "Local root: $PROJECT_ROOT"
+  info "Account: $ACCOUNT_NAME"
+  info "Target: $ACCOUNT_TARGET"
+  info "Port: $ACCOUNT_PORT"
+  info "Remote root: $REMOTE_ROOT"
+  info "Local ssh: $(command -v ssh || echo MISSING)"
+  info "Local rsync: $(command -v rsync || echo MISSING)"
+  ssh_capture "printf 'host=' && hostname && printf 'pwd=' && pwd && printf 'remote_root=' && { test -d $(shell_quote "$REMOTE_ROOT") && echo exists || echo missing; } && printf 'rsync=' && { command -v rsync || true; } && printf 'tmux=' && { command -v tmux || echo missing; } && command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=name,memory.total --format=csv,noheader || true"
+}
+
+cmd_exec() {
+  load_project
+  local detach=false tmux_mode=false cwd="" cwd_arg="" name="" replace=false allow_dangerous=false script="" stdin_mode=false remote_script=""
+  local account_override="" remote_override="" model="" tags="" purpose="" stage="" outputs=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --detach) detach=true; shift ;;
+      --tmux) tmux_mode=true; detach=true; shift ;;
+      --cwd) cwd_arg="$2"; shift 2 ;;
+      --name) name="$2"; shift 2 ;;
+      --replace) replace=true; shift ;;
+      --model) model="$2"; shift 2 ;;
+      --tag) tags="$(append_csv "$tags" "$2")"; shift 2 ;;
+      --purpose) purpose="$2"; shift 2 ;;
+      --stage) stage="$2"; shift 2 ;;
+      --output) outputs="$(append_csv "$outputs" "$2")"; shift 2 ;;
+      --script) script="$2"; shift 2 ;;
+      --stdin) stdin_mode=true; shift ;;
+      --allow-dangerous) allow_dangerous=true; shift ;;
+      --) shift; break ;;
+      *) break ;;
+    esac
+  done
+  [ "$stdin_mode" != "true" ] || [ -z "$script" ] || die "Use either --script or --stdin, not both."
+  apply_context_override "$account_override" "$remote_override"
+  cwd="$REMOTE_ROOT"
+  [ -z "$cwd_arg" ] || cwd="$(remote_join "$cwd_arg")"
+
+  local cmd="" tmp_name result pid status_path remote_cmd detach_rc backend="detach" tmux_session="" tmux_socket=""
+  if [ -n "$script" ]; then
+    local local_script
+    local_script="$(local_join "$script")"
+    tmp_name="$(date +%Y%m%d-%H%M%S)-$(basename "$script" | sed 's/[^A-Za-z0-9_.-]/-/g')"
+    remote_script="$REMOTE_ROOT/.autodl-remote/tmp/$tmp_name"
+    if [ "$ACCOUNT_AUTH" = "keychain" ]; then
+      upload_local_file "$local_script" "$remote_script" || return 1
+    else
+      upload_file_via_ssh "$local_script" "$remote_script" || return 1
+    fi
+    if [ $# -gt 0 ]; then
+      cmd="$(shell_quote_argv "$@") $(shell_quote "$remote_script")"
+    else
+      cmd="bash $(shell_quote "$remote_script")"
+    fi
+  elif [ "$stdin_mode" = "true" ]; then
+    [ $# -gt 0 ] || die "exec --stdin requires a command after --, for example: exec --stdin -- bash"
+    tmp_name="$(date +%Y%m%d-%H%M%S)-stdin.sh"
+    remote_script="$REMOTE_ROOT/.autodl-remote/tmp/$tmp_name"
+    if [ "$ACCOUNT_AUTH" = "keychain" ]; then
+      local tmp_local
+      tmp_local="$(mktemp "${TMPDIR:-/tmp}/autodl-remote-stdin.XXXXXX")" || die "mktemp failed"
+      cat > "$tmp_local"
+      upload_local_file "$tmp_local" "$remote_script" || { rm -f "$tmp_local"; return 1; }
+      rm -f "$tmp_local"
+    else
+      upload_stdin_to_remote "$remote_script" || return 1
+    fi
+    cmd="$(shell_quote_argv "$@") < $(shell_quote "$remote_script")"
+  else
+    [ $# -gt 0 ] || die "exec requires a command"
+    cmd="$(shell_quote_argv "$@")"
+  fi
+
+  if [ "$allow_dangerous" != "true" ]; then
+    dangerous_command_check "$cmd" "$cwd" || die "Dangerous remote command blocked. Re-run with --allow-dangerous after explicit approval."
+  fi
+  [ -n "$name" ] || name="exec-$(date +%Y%m%d-%H%M%S)"
+  name="$(sanitize_name "$name")"
+  local existing_file existing_status
+  existing_file="$(job_path "$name")"
+  if [ -f "$existing_file" ]; then
+    existing_status="$(job_remote_status_summary "$existing_file")"
+    case "$existing_status" in
+      running|lost)
+        if [ "$replace" != "true" ]; then
+          die "Job name is already active: $name (status=$existing_status). Use --replace to stop it before submitting a replacement."
+        fi
+        info "Replacing existing job: $name (status=$existing_status)"
+        cmd_job_stop "$name" || return $?
+        apply_context_override "$account_override" "$remote_override"
+        ;;
+      unreachable)
+        die "Cannot safely replace job $name because its remote status is unreachable."
+        ;;
+      *)
+        [ "$replace" != "true" ] || info "Replacing inactive job: $name (status=$existing_status)"
+        ;;
+    esac
+  fi
+  local log="$REMOTE_ROOT/.autodl-remote/logs/$name.log"
+  status_path="$REMOTE_ROOT/.autodl-remote/jobs/$name.status"
+  info "log=$log"
+  if [ "$detach" = "true" ]; then
+    local runner runner_local
+    runner="$REMOTE_ROOT/.autodl-remote/tmp/$name.runner.sh"
+    runner_local="$(mktemp "${TMPDIR:-/tmp}/autodl-remote-runner.XXXXXX")" || die "mktemp failed"
+    cat > "$runner_local" <<EOF
+#!/usr/bin/env bash
+set +e
+started_at=\$(date +%Y-%m-%dT%H:%M:%S%z)
+pid=\$BASHPID
+printf 'status=running\npid=%s\nstarted_at=%s\nlog=%s\ncwd=%s\n' "\$pid" "\$started_at" $(shell_quote "$log") $(shell_quote "$cwd") > $(shell_quote "$status_path")
+cancelled() {
+  finished_at=\$(date +%Y-%m-%dT%H:%M:%S%z)
+  printf 'status=cancelled\npid=%s\nstarted_at=%s\nfinished_at=%s\nexit_code=143\nlog=%s\ncwd=%s\n' "\$pid" "\$started_at" "\$finished_at" $(shell_quote "$log") $(shell_quote "$cwd") > $(shell_quote "$status_path")
+  exit 143
+}
+trap cancelled INT TERM
+if [ "\${AUTODL_REMOTE_TMUX:-}" = "1" ]; then
+  cd $(shell_quote "$cwd") && bash -lc $(shell_quote "$cmd") 2>&1 | tee $(shell_quote "$log")
+  rc=\${PIPESTATUS[0]}
+else
+  cd $(shell_quote "$cwd") && bash -lc $(shell_quote "$cmd") > $(shell_quote "$log") 2>&1
+  rc=\$?
+fi
+finished_at=\$(date +%Y-%m-%dT%H:%M:%S%z)
+printf 'status=exited\npid=%s\nstarted_at=%s\nfinished_at=%s\nexit_code=%s\nlog=%s\ncwd=%s\n' "\$pid" "\$started_at" "\$finished_at" "\$rc" $(shell_quote "$log") $(shell_quote "$cwd") > $(shell_quote "$status_path")
+exit "\$rc"
+EOF
+    upload_local_file "$runner_local" "$runner" || { rm -f "$runner_local"; return 1; }
+    rm -f "$runner_local"
+    if [ "$tmux_mode" = "true" ]; then
+      local launcher launcher_local pane pane_local
+      backend="tmux"
+      tmux_session="$name"
+      tmux_socket="$(tmux_socket_path)"
+      pane="$REMOTE_ROOT/.autodl-remote/tmp/$name.tmux-pane.sh"
+      pane_local="$(mktemp "${TMPDIR:-/tmp}/autodl-remote-tmux-pane.XXXXXX")" || die "mktemp failed"
+      cat > "$pane_local" <<EOF
+#!/usr/bin/env bash
+export AUTODL_REMOTE_TMUX=1
+runner=$(shell_quote "$runner")
+bash "\$runner"
+rc=\$?
+printf "\\n[autodl-remote] runner exited with %s\\n" "\$rc"
+exec bash --noprofile --norc
+EOF
+      upload_local_file "$pane_local" "$pane" || { rm -f "$pane_local"; return 1; }
+      rm -f "$pane_local"
+      launcher="$REMOTE_ROOT/.autodl-remote/tmp/$name.tmux-launcher.sh"
+      launcher_local="$(mktemp "${TMPDIR:-/tmp}/autodl-remote-tmux-launcher.XXXXXX")" || die "mktemp failed"
+      cat > "$launcher_local" <<EOF
+#!/usr/bin/env bash
+set -e
+socket=$(shell_quote "$tmux_socket")
+session=$(shell_quote "$tmux_session")
+runner=$(shell_quote "$runner")
+pane=$(shell_quote "$pane")
+log=$(shell_quote "$log")
+status_path=$(shell_quote "$status_path")
+if ! command -v tmux >/dev/null 2>&1; then
+  echo "tmux=missing"
+  echo "$(tmux_missing_text)" >&2
+  exit 127
+fi
+mkdir -p "\$(dirname "\$socket")" "\$(dirname "\$log")" "\$(dirname "\$status_path")"
+chmod +x "\$runner" "\$pane"
+if tmux -S "\$socket" has-session -t "\$session" 2>/dev/null; then
+  echo "tmux_session_exists=\$session" >&2
+  exit 3
+fi
+printf -v pane_q '%q' "\$pane"
+tmux -S "\$socket" new-session -d -s "\$session" "bash \$pane_q"
+pane_pid="\$(tmux -S "\$socket" list-panes -t "\$session:0.0" -F '#{pane_pid}' 2>/dev/null | head -n 1 || true)"
+runner_pid=""
+for _ in 1 2 3 4 5; do
+  if [ -f "\$status_path" ]; then
+    runner_pid="\$(awk -F= '\$1=="pid"{print \$2; exit}' "\$status_path")"
+    [ -n "\$runner_pid" ] && break
+  fi
+  sleep 0.2
+done
+[ -n "\$runner_pid" ] || runner_pid="\$pane_pid"
+printf 'pid=%s\nlog=%s\nstatus=%s\ntmux_session=%s\ntmux_socket=%s\n' "\$runner_pid" "\$log" "\$status_path" "\$session" "\$socket"
+EOF
+      upload_local_file "$launcher_local" "$launcher" || { rm -f "$launcher_local"; return 1; }
+      rm -f "$launcher_local"
+      remote_cmd="bash $(shell_quote "$launcher")"
+    else
+      remote_cmd="mkdir -p $(shell_quote "$(dirname "$log")") $(shell_quote "$(dirname "$status_path")") && chmod +x $(shell_quote "$runner") && if command -v setsid >/dev/null 2>&1; then setsid bash $(shell_quote "$runner") < /dev/null > /dev/null 2>&1 & process_group=yes; else nohup bash $(shell_quote "$runner") < /dev/null > /dev/null 2>&1 & process_group=no; fi; printf 'pid=%s\nlog=%s\nstatus=%s\nprocess_group=%s\n' \"\$!\" $(shell_quote "$log") $(shell_quote "$status_path") \"\$process_group\""
+    fi
+    result="$(ssh_capture "bash -lc $(shell_quote "$remote_cmd")" 2>&1)"
+    detach_rc=$?
+    printf '%s\n' "$result"
+    [ "$detach_rc" -eq 0 ] || return "$detach_rc"
+    pid="$(printf '%s\n' "$result" | awk -F= '$1=="pid"{print $2; exit}')"
+    tmux_session="$(printf '%s\n' "$result" | awk -F= '$1=="tmux_session"{print $2; exit}')"
+    tmux_socket="$(printf '%s\n' "$result" | awk -F= '$1=="tmux_socket"{print $2; exit}')"
+    local process_group
+    process_group="$(printf '%s\n' "$result" | awk -F= '$1=="process_group"{print $2; exit}')"
+    [ "$backend" != "tmux" ] || process_group=false
+    [ -n "$pid" ] || die "Remote detach did not return a pid."
+    write_job "$name" "$pid" "$log" "$status_path" "$cwd" "$cmd" "$model" "$tags" "$purpose" "$stage" "$outputs" "$backend" "$tmux_session" "$tmux_socket" "${process_group:-false}"
+    write_history "exec-$backend" "$cmd log=$log"
+  else
+    local inner rc
+    inner="set -o pipefail; ( $cmd ) 2>&1 | tee $(shell_quote "$log"); exit \${PIPESTATUS[0]}"
+    ssh_run "mkdir -p $(shell_quote "$(dirname "$log")") && cd $(shell_quote "$cwd") && bash -lc $(shell_quote "$inner")"
+    rc=$?
+    write_history exec "$cmd rc=$rc log=$log"
+    return "$rc"
+  fi
+}
+
+cmd_put() {
+  load_project
+  local dry_run=false delete=false account_override="" remote_override=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --dry-run) dry_run=true; shift ;;
+      --delete) delete=true; shift ;;
+      --) shift; break ;;
+      *) break ;;
+    esac
+  done
+  apply_context_override "$account_override" "$remote_override"
+  [ $# -ge 1 ] || die "put requires <local-path> [remote-path]"
+  local local_arg="$1" remote_arg="${2:-}" local_path remote_path
+  local_path="$(local_join "$local_arg")"
+  [ -e "$local_path" ] || die "Local path does not exist: $local_arg"
+  if [ -z "$remote_arg" ]; then
+    remote_arg="$(remote_rel_for_local "$local_path")"
+  fi
+  remote_path="$(remote_join "$remote_arg")"
+  ensure_remote_dir "$(dirname "$remote_path")"
+  if command -v rsync >/dev/null 2>&1 && remote_has_rsync; then
+    local args=(-az --human-readable -e "$(rsync_ssh_command)")
+    [ "$dry_run" = "true" ] && args+=(--dry-run)
+    [ "$delete" = "true" ] && args+=(--delete)
+    if [ -d "$local_path" ]; then
+      rsync "${args[@]}" "$local_path/" "$ACCOUNT_TARGET:$remote_path/"
+    else
+      rsync "${args[@]}" "$local_path" "$ACCOUNT_TARGET:$remote_path"
+    fi
+  else
+    [ "$dry_run" != "true" ] || die "dry-run requires rsync."
+    scp_common_args
+    if [ -d "$local_path" ]; then
+      scp -r "${SCP_ARGS[@]}" "$local_path" "$ACCOUNT_TARGET:$remote_path"
+    else
+      scp "${SCP_ARGS[@]}" "$local_path" "$ACCOUNT_TARGET:$remote_path"
+    fi
+  fi
+  write_history put "$local_arg -> $remote_path"
+}
+
+cmd_get() {
+  load_project
+  local dry_run=false account_override="" remote_override=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --dry-run) dry_run=true; shift ;;
+      --) shift; break ;;
+      *) break ;;
+    esac
+  done
+  apply_context_override "$account_override" "$remote_override"
+  [ $# -ge 1 ] || die "get requires <remote-path> [local-path]"
+  local remote_arg="$1" local_arg="${2:-}" remote_path local_path kind
+  remote_path="$(remote_join "$remote_arg")"
+  if [ -z "$local_arg" ]; then
+    case "$remote_arg" in
+      /*) local_arg="$(basename "$remote_arg")" ;;
+      *) local_arg="$remote_arg" ;;
+    esac
+  fi
+  local_path="$(local_join "$local_arg")"
+  mkdir -p "$(dirname "$local_path")"
+  kind="$(ssh_capture "if [ -d $(shell_quote "$remote_path") ]; then echo dir; elif [ -f $(shell_quote "$remote_path") ]; then echo file; else echo missing; fi")"
+  [ "$kind" != "missing" ] || die "Remote path does not exist: $remote_arg"
+  if command -v rsync >/dev/null 2>&1 && remote_has_rsync; then
+    local args=(-az --human-readable -e "$(rsync_ssh_command)")
+    [ "$dry_run" = "true" ] && args+=(--dry-run)
+    if [ "$kind" = "dir" ]; then
+      mkdir -p "$local_path"
+      rsync "${args[@]}" "$ACCOUNT_TARGET:$remote_path/" "$local_path/"
+    else
+      rsync "${args[@]}" "$ACCOUNT_TARGET:$remote_path" "$local_path"
+    fi
+  else
+    [ "$dry_run" != "true" ] || die "dry-run requires rsync."
+    scp_common_args
+    if [ "$kind" = "dir" ]; then
+      scp -r "${SCP_ARGS[@]}" "$ACCOUNT_TARGET:$remote_path" "$local_path"
+    else
+      scp "${SCP_ARGS[@]}" "$ACCOUNT_TARGET:$remote_path" "$local_path"
+    fi
+  fi
+  write_history get "$remote_path -> $local_arg"
+}
+
+cmd_tree() {
+  load_project
+  local path="." depth=3 limit=500 account_override="" remote_override=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --depth) depth="$2"; shift 2 ;;
+      --limit) limit="$2"; shift 2 ;;
+      --) shift; break ;;
+      -*) die "unknown tree option: $1" ;;
+      *) path="$1"; shift ;;
+    esac
+  done
+  apply_context_override "$account_override" "$remote_override"
+  local remote_path
+  remote_path="$(remote_join "$path")"
+  ssh_capture "cd $(shell_quote "$remote_path") && { find . -maxdepth $depth | sed 's#^./##' | sort | head -n $limit; true; }"
+}
+
+cmd_ls() {
+  load_project
+  local account_override="" remote_override=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --) shift; break ;;
+      -*) die "unknown ls option: $1" ;;
+      *) break ;;
+    esac
+  done
+  apply_context_override "$account_override" "$remote_override"
+  local path="${1:-.}"
+  ssh_run "ls -lah $(shell_quote "$(remote_join "$path")")"
+}
+
+cmd_cat() {
+  load_project
+  local lines=200 account_override="" remote_override=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --lines) lines="$2"; shift 2 ;;
+      --) shift; break ;;
+      *) break ;;
+    esac
+  done
+  apply_context_override "$account_override" "$remote_override"
+  [ $# -gt 0 ] || die "cat requires a path"
+  ssh_run "sed -n '1,${lines}p' $(shell_quote "$(remote_join "$1")")"
+}
+
+cmd_tail() {
+  load_project
+  local lines=120 follow=false account_override="" remote_override=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --lines) lines="$2"; shift 2 ;;
+      --follow|-f) follow=true; shift ;;
+      --) shift; break ;;
+      *) break ;;
+    esac
+  done
+  apply_context_override "$account_override" "$remote_override"
+  [ $# -gt 0 ] || die "tail requires a path"
+  local flag=""
+  [ "$follow" = "true" ] && flag="-f"
+  ssh_run "tail -n $lines $flag $(shell_quote "$(remote_join "$1")")"
+}
+
+cmd_job_list() {
+  load_project
+  local dir file name pid started log command backend seen=false
+  dir="$(jobs_dir)"
+  mkdir -p "$dir"
+  if ls "$dir"/*.conf >/dev/null 2>&1; then
+    printf '%-24s %-10s %-10s %-24s %s\n' "name" "pid" "backend" "started_at" "log"
+    for file in "$dir"/*.conf; do
+      seen=true
+      name="$(job_get "$file" NAME)"
+      pid="$(job_get "$file" PID)"
+      backend="$(job_get "$file" BACKEND)"
+      started="$(job_get "$file" STARTED_AT)"
+      log="$(job_get "$file" LOG_PATH)"
+      command="$(job_get "$file" COMMAND)"
+      printf '%-24s %-10s %-10s %-24s %s\n' "$name" "$pid" "${backend:-detach}" "$started" "$log"
+      [ -n "$command" ] && printf '  command: %s\n' "$command"
+    done
+  fi
+  [ "$seen" = "true" ] || info "No jobs recorded."
+}
+
+cmd_job_status() {
+  load_project
+  [ $# -eq 1 ] || die "job status requires exactly one name"
+  local name file pid log status_path cwd command backend tmux_session tmux_socket remote_status rc
+  name="$(sanitize_name "$1")"
+  file="$(job_path "$name")"
+  [ -f "$file" ] || die "Job not found: $name"
+  pid="$(job_get "$file" PID)"
+  log="$(job_get "$file" LOG_PATH)"
+  status_path="$(job_get "$file" STATUS_PATH)"
+  cwd="$(job_get "$file" CWD)"
+  command="$(job_get "$file" COMMAND)"
+  backend="$(job_get "$file" BACKEND)"
+  tmux_session="$(job_get "$file" TMUX_SESSION)"
+  tmux_socket="$(job_get "$file" TMUX_SOCKET)"
+  [ -n "$pid" ] || die "Job has no recorded pid: $name"
+  apply_job_context "$file"
+
+  info "name=$name"
+  info "account=$ACCOUNT_NAME"
+  info "remote_root=$REMOTE_ROOT"
+  info "pid=$pid"
+  info "backend=${backend:-detach}"
+  [ -z "$tmux_session" ] || info "tmux_session=$tmux_session"
+  [ -z "$tmux_socket" ] || info "tmux_socket=$tmux_socket"
+  info "cwd=$cwd"
+  info "log=$log"
+  info "status_path=$status_path"
+  info "command=$command"
+  remote_status="$(job_status_payload "$pid" "$status_path" 2>&1)"
+  rc=$?
+  if [ "$rc" -eq 0 ]; then
+    if [ "$(job_status_from_payload "$remote_status")" = "lost" ]; then
+      printf '%s\n' "$remote_status" | awk -F= '$1 == "status" { print "status=lost"; next } { print }'
+      info "hint=runner pid is not alive; run job stop $name to terminate any surviving process-group children, then submit a replacement if needed"
+    else
+      printf '%s\n' "$remote_status"
+    fi
+  else
+    info "remote_status=unreachable"
+    printf '%s\n' "$remote_status" >&2
+    return "$rc"
+  fi
+}
+
+cmd_job_stop() {
+  load_project
+  [ $# -eq 1 ] || die "job stop requires exactly one name"
+  local name file pid log status_path cwd backend tmux_session tmux_socket process_group current_status group_probe remote_cmd output rc
+  name="$(sanitize_name "$1")"
+  file="$(job_path "$name")"
+  [ -f "$file" ] || die "Job not found: $name"
+  pid="$(job_get "$file" PID)"
+  log="$(job_get "$file" LOG_PATH)"
+  status_path="$(job_get "$file" STATUS_PATH)"
+  cwd="$(job_get "$file" CWD)"
+  backend="$(job_get "$file" BACKEND)"
+  tmux_session="$(job_get "$file" TMUX_SESSION)"
+  tmux_socket="$(job_get "$file" TMUX_SOCKET)"
+  process_group="$(job_get "$file" PROCESS_GROUP)"
+  [ -n "$pid" ] || die "Job has no recorded pid: $name"
+  apply_job_context "$file"
+  current_status="$(job_remote_status_summary "$file")"
+  case "$current_status" in
+    exited|cancelled)
+      info "status=$current_status"
+      info "Job is already complete; its recorded status was not changed."
+      return 0
+      ;;
+    unreachable)
+      die "Cannot safely stop job $name because its remote status is unreachable."
+      ;;
+  esac
+
+  if [ "${backend:-detach}" = "tmux" ]; then
+    [ -n "$tmux_session" ] && [ -n "$tmux_socket" ] || die "tmux job has incomplete session metadata: $name"
+    remote_cmd="tmux -S $(shell_quote "$tmux_socket") kill-session -t $(shell_quote "$tmux_session") 2>/dev/null || true; finished_at=\$(date +%Y-%m-%dT%H:%M:%S%z); printf 'status=cancelled\npid=%s\nfinished_at=%s\nexit_code=143\nlog=%s\ncwd=%s\n' $(shell_quote "$pid") \"\$finished_at\" $(shell_quote "$log") $(shell_quote "$cwd") > $(shell_quote "$status_path"); printf 'status=cancelled\npid=%s\nbackend=tmux\n' $(shell_quote "$pid")"
+  else
+    if [ -z "$process_group" ]; then
+      group_probe="$(ssh_capture "pid=$(shell_quote "$pid"); pgid=\$(ps -o pgid= -p \"\$pid\" 2>/dev/null | tr -d '[:space:]'); if [ -n \"\$pgid\" ]; then [ \"\$pgid\" = \"\$pid\" ] && echo yes || echo no; elif kill -0 -- -\"\$pid\" 2>/dev/null; then echo yes; else echo no; fi" 2>/dev/null)" || return $?
+      [ "$group_probe" = "yes" ] || die "Legacy job $name is not an isolated process group, so it cannot be stopped safely."
+      process_group=yes
+    fi
+    [ "$process_group" = "yes" ] || die "Job $name was not launched in an isolated process group, so it cannot be stopped safely."
+    remote_cmd="pid=$(shell_quote "$pid"); status_path=$(shell_quote "$status_path"); log=$(shell_quote "$log"); cwd=$(shell_quote "$cwd"); group_alive() { if command -v ps >/dev/null 2>&1; then ps -eo pgid=,stat= 2>/dev/null | awk -v pgid=\"\$pid\" '\$1 == pgid && \$2 !~ /^Z/ { found=1 } END { exit !found }'; else kill -0 -- -\"\$pid\" 2>/dev/null; fi; }; if group_alive; then kill -TERM -- -\"\$pid\" || exit 1; for _ in 1 2 3 4 5; do group_alive || break; sleep 1; done; if group_alive; then kill -KILL -- -\"\$pid\" || exit 1; for _ in 1 2 3 4 5; do group_alive || break; sleep 1; done; fi; group_alive && { echo 'autodl-remote: process group remained alive after TERM and KILL' >&2; exit 1; }; fi; finished_at=\$(date +%Y-%m-%dT%H:%M:%S%z); printf 'status=cancelled\npid=%s\nfinished_at=%s\nexit_code=143\nlog=%s\ncwd=%s\n' \"\$pid\" \"\$finished_at\" \"\$log\" \"\$cwd\" > \"\$status_path\"; printf 'status=cancelled\npid=%s\nbackend=detach\n' \"\$pid\""
+  fi
+  output="$(ssh_capture "bash -lc $(shell_quote "$remote_cmd")" 2>&1)"
+  rc=$?
+  if [ "$rc" -eq 0 ]; then
+    printf '%s\n' "$output"
+  else
+    printf '%s\n' "$output" >&2
+    return "$rc"
+  fi
+}
+
+cmd_job_tail() {
+  load_project
+  local lines=120 follow=false name=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --lines) lines="$2"; shift 2 ;;
+      --follow|-f) follow=true; shift ;;
+      --)
+        shift
+        [ -z "$name" ] && [ $# -gt 0 ] && { name="$1"; shift; }
+        [ $# -eq 0 ] || die "unknown job tail argument: $1"
+        break
+        ;;
+      *)
+        [ -z "$name" ] || die "unknown job tail argument: $1"
+        name="$1"
+        shift
+        ;;
+    esac
+  done
+  validate_tail_settings "$lines"
+  [ -n "$name" ] || die "job tail requires a name"
+  local file log backend tmux_session tmux_socket flag=""
+  name="$(sanitize_name "$name")"
+  file="$(job_path "$name")"
+  [ -f "$file" ] || die "Job not found: $name"
+  log="$(job_get "$file" LOG_PATH)"
+  backend="$(job_get "$file" BACKEND)"
+  tmux_session="$(job_get "$file" TMUX_SESSION)"
+  tmux_socket="$(job_get "$file" TMUX_SOCKET)"
+  apply_job_context "$file"
+  if [ "${backend:-detach}" = "tmux" ] && [ "$follow" != "true" ]; then
+    remote_tmux_capture "$tmux_session" "$tmux_socket" "$lines" && return 0
+    info "tmux capture failed; falling back to log tail."
+  fi
+  [ "$follow" = "true" ] && flag="-f"
+  if [ "$follow" = "true" ]; then
+    ssh_run "tail -n $lines $flag $(shell_quote "$log")"
+  else
+    ssh_run "$(normalized_log_tail_command "$log" "$lines")"
+  fi
+}
+
+cmd_job() {
+  [ $# -gt 0 ] || die "job requires a subcommand"
+  local sub="$1"
+  shift
+  case "$sub" in
+    list|ls) cmd_job_list "$@" ;;
+    status) cmd_job_status "$@" ;;
+    stop) cmd_job_stop "$@" ;;
+    tail) cmd_job_tail "$@" ;;
+    *) die "unknown job command: $sub" ;;
+  esac
+}
+
+cmd_run_list() {
+  load_project
+  local dir file name account remote model stage tags started status seen=false
+  dir="$(jobs_dir)"
+  mkdir -p "$dir"
+  if ls "$dir"/*.conf >/dev/null 2>&1; then
+    printf '%-24s %-14s %-12s %-12s %-16s %-20s %s\n' "run" "account" "status" "model" "stage" "started_at" "tags"
+    for file in "$dir"/*.conf; do
+      seen=true
+      name="$(job_get "$file" NAME)"
+      account="$(job_get "$file" ACCOUNT)"
+      remote="$(job_get "$file" REMOTE_ROOT)"
+      model="$(job_get "$file" MODEL)"
+      stage="$(job_get "$file" STAGE)"
+      tags="$(job_get "$file" TAGS)"
+      started="$(job_get "$file" STARTED_AT)"
+      [ -n "$account" ] || account="${PROJECT_BOUND_ACCOUNT:-$PROJECT_ACCOUNT}"
+      [ -n "$remote" ] || remote="${PROJECT_BOUND_REMOTE_ROOT:-$REMOTE_ROOT}"
+      status="$(job_remote_status_summary "$file")"
+      printf '%-24s %-14s %-12s %-12s %-16s %-20s %s\n' "$name" "$account" "$status" "${model:--}" "${stage:--}" "$started" "${tags:--}"
+    done
+  fi
+  [ "$seen" = "true" ] || info "No runs recorded."
+}
+
+cmd_run_note() {
+  load_project
+  [ $# -gt 0 ] || die "run note requires a run name"
+  local name file model="" tags="" purpose="" stage="" outputs=""
+  name="$(sanitize_name "$1")"
+  shift
+  file="$(job_path "$name")"
+  [ -f "$file" ] || die "Run not found: $name"
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --model) model="$2"; shift 2 ;;
+      --tag) tags="$(append_csv "$tags" "$2")"; shift 2 ;;
+      --purpose) purpose="$2"; shift 2 ;;
+      --stage) stage="$2"; shift 2 ;;
+      --output) outputs="$(append_csv "$outputs" "$2")"; shift 2 ;;
+      *) die "unknown run note option: $1" ;;
+    esac
+  done
+  [ -z "$model" ] || config_set_in_file "$file" MODEL "$model"
+  if [ -n "$tags" ]; then
+    local existing_tags
+    existing_tags="$(job_get "$file" TAGS)"
+    [ -n "$existing_tags" ] && tags="$(append_csv "$existing_tags" "$tags")"
+    config_set_in_file "$file" TAGS "$tags"
+  fi
+  [ -z "$purpose" ] || config_set_in_file "$file" PURPOSE "$purpose"
+  [ -z "$stage" ] || config_set_in_file "$file" STAGE "$stage"
+  if [ -n "$outputs" ]; then
+    local existing_outputs
+    existing_outputs="$(job_get "$file" OUTPUTS)"
+    [ -n "$existing_outputs" ] && outputs="$(append_csv "$existing_outputs" "$outputs")"
+    config_set_in_file "$file" OUTPUTS "$outputs"
+  fi
+  info "Updated run: $name"
+}
+
+cmd_run_submit() {
+  local args=(--detach) uploads=() account_override="" remote_override="" upload_count=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; args+=("$1" "$2"); shift 2 ;;
+      --remote) remote_override="$2"; args+=("$1" "$2"); shift 2 ;;
+      --sync-up) uploads[$upload_count]="$2"; upload_count=$((upload_count + 1)); shift 2 ;;
+      --) shift; break ;;
+      *) args+=("$1"); shift ;;
+    esac
+  done
+  [ $# -gt 0 ] || die "run submit requires a command after --"
+  local path upload_index=0
+  while [ "$upload_index" -lt "$upload_count" ]; do
+    path="${uploads[$upload_index]}"
+    if [ -n "$account_override" ] && [ -n "$remote_override" ]; then
+      cmd_put --account "$account_override" --remote "$remote_override" "$path"
+    elif [ -n "$account_override" ]; then
+      cmd_put --account "$account_override" "$path"
+    elif [ -n "$remote_override" ]; then
+      cmd_put --remote "$remote_override" "$path"
+    else
+      cmd_put "$path"
+    fi
+    upload_index=$((upload_index + 1))
+  done
+  cmd_exec "${args[@]}" -- "$@"
+}
+
+cmd_run() {
+  [ $# -gt 0 ] || die "run requires a subcommand"
+  local sub="$1"
+  shift
+  case "$sub" in
+    submit) cmd_run_submit "$@" ;;
+    list|ls) cmd_run_list "$@" ;;
+    status) cmd_job_status "$@" ;;
+    stop) cmd_job_stop "$@" ;;
+    tail) cmd_job_tail "$@" ;;
+    note) cmd_run_note "$@" ;;
+    *) die "unknown run command: $sub" ;;
+  esac
+}
+
+cmd_fleet_create() {
+  load_project
+  [ $# -gt 0 ] || die "fleet create requires a name"
+  local name dir
+  name="$1"
+  valid_name "$name" || die "Invalid fleet name: $name"
+  dir="$(fleet_dir "$name")"
+  mkdir -p "$dir"
+  info "Created fleet: $name"
+}
+
+cmd_fleet_add() {
+  load_project
+  [ $# -ge 2 ] || die "fleet add requires <fleet> <device>"
+  local fleet="$1" device="$2" account="$PROJECT_ACCOUNT" remote="$REMOTE_ROOT" tags="" file
+  shift 2
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account="$2"; shift 2 ;;
+      --remote) remote="$2"; shift 2 ;;
+      --tags) tags="$2"; shift 2 ;;
+      *) die "unknown fleet add option: $1" ;;
+    esac
+  done
+  load_account "$account"
+  [ -n "$remote" ] || remote="$ACCOUNT_DEFAULT_REMOTE"
+  [ -n "$remote" ] || die "fleet add requires --remote or an account default remote."
+  remote="${remote%/}"
+  validate_remote_root "$remote"
+  mkdir -p "$(fleet_dir "$fleet")"
+  file="$(fleet_device_path "$fleet" "$device")"
+  cat > "$file" <<EOF
+FLEET="$(config_quote "$fleet")"
+NAME="$(config_quote "$device")"
+ACCOUNT="$(config_quote "$account")"
+REMOTE_ROOT="$(config_quote "$remote")"
+TAGS="$(config_quote "$tags")"
+ADDED_AT="$(date +%Y-%m-%dT%H:%M:%S%z)"
+EOF
+  info "Added $device -> $account:$remote to fleet $fleet"
+}
+
+cmd_fleet_list() {
+  load_project
+  local root fleet_dir file fleet device account remote tags seen=false
+  root="$(fleet_root)"
+  mkdir -p "$root"
+  if [ -n "$(find "$root" -mindepth 2 -maxdepth 2 -name '*.conf' -print -quit 2>/dev/null)" ]; then
+    printf '%-16s %-18s %-14s %-34s %s\n' "fleet" "device" "account" "remote_root" "tags"
+    while IFS= read -r file; do
+      [ -n "$file" ] || continue
+      seen=true
+      fleet="$(device_get "$file" FLEET)"
+      device="$(device_get "$file" NAME)"
+      account="$(device_get "$file" ACCOUNT)"
+      remote="$(device_get "$file" REMOTE_ROOT)"
+      tags="$(device_get "$file" TAGS)"
+      printf '%-16s %-18s %-14s %-34s %s\n' "$fleet" "$device" "$account" "$remote" "${tags:--}"
+    done <<EOF
+$(find "$root" -mindepth 2 -maxdepth 2 -name '*.conf' | sort)
+EOF
+  fi
+  [ "$seen" = "true" ] || info "No fleets recorded."
+}
+
+latest_run_for_device() {
+  local account="$1" remote="$2" dir file name latest_name="" latest_started="" started job_account job_remote
+  dir="$(jobs_dir)"
+  if ls "$dir"/*.conf >/dev/null 2>&1; then
+    for file in "$dir"/*.conf; do
+      job_account="$(job_get "$file" ACCOUNT)"
+      job_remote="$(job_get "$file" REMOTE_ROOT)"
+      [ -n "$job_account" ] || job_account="${PROJECT_BOUND_ACCOUNT:-$PROJECT_ACCOUNT}"
+      [ -n "$job_remote" ] || job_remote="${PROJECT_BOUND_REMOTE_ROOT:-$REMOTE_ROOT}"
+      [ "$job_account" = "$account" ] || continue
+      [ "$job_remote" = "$remote" ] || continue
+      started="$(job_get "$file" STARTED_AT)"
+      name="$(job_get "$file" NAME)"
+      if [ -z "$latest_started" ] || [ "$started" \> "$latest_started" ]; then
+        latest_started="$started"
+        latest_name="$name"
+      fi
+    done
+  fi
+  printf '%s\n' "${latest_name:--}"
+}
+
+print_device_status() {
+  local device="$1" account="$2" remote="$3" tags="$4" probe online host gpu disk current
+  load_account "$account"
+  REMOTE_ROOT="${remote%/}"
+  validate_remote_root "$REMOTE_ROOT"
+  probe="$(remote_probe)"
+  online="$(kv_get "$probe" online)"
+  host="$(kv_get "$probe" host)"
+  gpu="$(kv_get "$probe" gpu)"
+  disk="$(kv_get "$probe" disk)"
+  current="$(latest_run_for_device "$account" "$REMOTE_ROOT")"
+  printf '%-18s %-8s %-14s %-28s %-22s %-18s %s\n' "$device" "${online:-no}" "$account" "${gpu:--}" "${disk:--}" "$current" "${tags:--}"
+  [ "${online:-no}" = "yes" ] || printf '  error: %s\n' "$(kv_get "$probe" error)"
+  [ -n "$host" ] && printf '  host: %s remote: %s\n' "$host" "$REMOTE_ROOT"
+}
+
+cmd_fleet_status() {
+  load_project
+  local fleet="" file device account remote tags
+  [ $# -gt 0 ] && fleet="$1"
+  printf '%-18s %-8s %-14s %-28s %-22s %-18s %s\n' "device" "online" "account" "gpu" "disk" "current_run" "tags"
+  if [ -z "$fleet" ]; then
+    print_device_status "current" "$PROJECT_ACCOUNT" "$REMOTE_ROOT" "project"
+    return 0
+  fi
+  [ -d "$(fleet_dir "$fleet")" ] || die "Fleet not found: $fleet"
+  for file in "$(fleet_dir "$fleet")"/*.conf; do
+    [ -f "$file" ] || continue
+    device="$(device_get "$file" NAME)"
+    account="$(device_get "$file" ACCOUNT)"
+    remote="$(device_get "$file" REMOTE_ROOT)"
+    tags="$(device_get "$file" TAGS)"
+    print_device_status "$device" "$account" "$remote" "$tags"
+  done
+}
+
+cmd_fleet() {
+  [ $# -gt 0 ] || die "fleet requires a subcommand"
+  local sub="$1"
+  shift
+  case "$sub" in
+    create) cmd_fleet_create "$@" ;;
+    add) cmd_fleet_add "$@" ;;
+    list|ls) cmd_fleet_list "$@" ;;
+    status) cmd_fleet_status "$@" ;;
+    *) die "unknown fleet command: $sub" ;;
+  esac
+}
+
+remote_log_tail() {
+  local account="$1" remote="$2" log="$3" lines="$4" output rc
+  [ -n "$log" ] || { printf '[log missing]\n'; return 0; }
+  load_account "$account"
+  REMOTE_ROOT="${remote%/}"
+  validate_remote_root "$REMOTE_ROOT"
+  output="$(ssh_capture "if [ -f $(shell_quote "$log") ]; then $(normalized_log_tail_command "$log" "$lines"); else printf '[log missing] %s\n' $(shell_quote "$log"); fi" 2>&1)"
+  rc=$?
+  if [ "$rc" -eq 0 ]; then
+    printf '%s\n' "$output"
+  else
+    printf '[log unavailable]\n%s\n' "$output"
+  fi
+}
+
+remote_job_tail() {
+  local account="$1" remote="$2" file="$3" lines="$4"
+  local backend log session socket output rc
+  backend="$(job_get "$file" BACKEND)"
+  log="$(job_get "$file" LOG_PATH)"
+  session="$(job_get "$file" TMUX_SESSION)"
+  socket="$(job_get "$file" TMUX_SOCKET)"
+  if [ "${backend:-detach}" = "tmux" ]; then
+    load_account "$account"
+    REMOTE_ROOT="${remote%/}"
+    validate_remote_root "$REMOTE_ROOT"
+    output="$(remote_tmux_capture "$session" "$socket" "$lines" 2>&1)"
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
+      printf '%s\n' "$output"
+      return 0
+    fi
+    printf '[tmux pane unavailable; falling back to log]\n%s\n\n' "$output"
+  fi
+  remote_log_tail "$account" "$remote" "$log" "$lines"
+}
+
+dashboard_pct() {
+  local pct
+  pct="$(printf '%s\n' "$1" | awk 'match($0, /[0-9]+%/) { print substr($0, RSTART, RLENGTH - 1); exit }')"
+  case "$pct" in
+    ""|*[!0-9]*) pct=0 ;;
+  esac
+  [ "$pct" -gt 100 ] 2>/dev/null && pct=100
+  printf '%s\n' "$pct"
+}
+
+dashboard_gpu_model() {
+  local value="$1" model
+  model="$(printf '%s\n' "$value" | sed -E 's/[[:space:]][0-9]+\/[0-9]+ MiB [0-9]+%$//')"
+  [ -n "$model" ] || model="-"
+  printf '%s\n' "$model"
+}
+
+dashboard_gpu_mem() {
+  local value="$1" mem
+  mem="$(printf '%s\n' "$value" | sed -nE 's/.* ([0-9]+\/[0-9]+ MiB) [0-9]+%$/\1/p')"
+  [ -n "$mem" ] || mem="-"
+  printf '%s\n' "$mem"
+}
+
+dashboard_status_class() {
+  local online="$1" status="$2"
+  if [ "${online:-no}" != "yes" ]; then
+    printf 'offline\n'
+    return 0
+  fi
+  case "$status" in
+    running) printf 'training\n' ;;
+    unreachable|failed|error) printf 'error\n' ;;
+    *) printf 'idle\n' ;;
+  esac
+}
+
+dashboard_status_label() {
+  case "$1" in
+    training) printf '训练中\n' ;;
+    idle) printf '空闲\n' ;;
+    error) printf '异常\n' ;;
+    offline) printf '离线\n' ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+dashboard_job_in_scope() {
+  local file="$1" scope_fleet="$2" account remote fleet_file fleet_account fleet_remote
+  account="$(job_get "$file" ACCOUNT)"
+  remote="$(job_get "$file" REMOTE_ROOT)"
+  [ -n "$account" ] || account="${PROJECT_BOUND_ACCOUNT:-$PROJECT_ACCOUNT}"
+  [ -n "$remote" ] || remote="${PROJECT_BOUND_REMOTE_ROOT:-$REMOTE_ROOT}"
+  if [ -z "$scope_fleet" ]; then
+    [ "$account" = "${PROJECT_BOUND_ACCOUNT:-$PROJECT_ACCOUNT}" ] && [ "$remote" = "${PROJECT_BOUND_REMOTE_ROOT:-$REMOTE_ROOT}" ]
+    return $?
+  fi
+  for fleet_file in "$(fleet_dir "$scope_fleet")"/*.conf; do
+    [ -f "$fleet_file" ] || continue
+    fleet_account="$(device_get "$fleet_file" ACCOUNT)"
+    fleet_remote="$(device_get "$fleet_file" REMOTE_ROOT)"
+    if [ "$fleet_account" = "$account" ] && [ "$fleet_remote" = "$remote" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+latest_job_file_for_device() {
+  local account="$1" remote="$2" dir file latest_file="" latest_started="" started job_account job_remote
+  dir="$(jobs_dir)"
+  if ls "$dir"/*.conf >/dev/null 2>&1; then
+    for file in "$dir"/*.conf; do
+      job_account="$(job_get "$file" ACCOUNT)"
+      job_remote="$(job_get "$file" REMOTE_ROOT)"
+      [ -n "$job_account" ] || job_account="${PROJECT_BOUND_ACCOUNT:-$PROJECT_ACCOUNT}"
+      [ -n "$job_remote" ] || job_remote="${PROJECT_BOUND_REMOTE_ROOT:-$REMOTE_ROOT}"
+      [ "$job_account" = "$account" ] || continue
+      [ "$job_remote" = "$remote" ] || continue
+      started="$(job_get "$file" STARTED_AT)"
+      if [ -z "$latest_started" ] || [ "$started" \> "$latest_started" ]; then
+        latest_started="$started"
+        latest_file="$file"
+      fi
+    done
+  fi
+  printf '%s\n' "$latest_file"
+}
+
+dashboard_device_card() {
+  local device="$1" account="$2" remote="$3" tags="$4" lines="$5"
+  local probe online host gpu disk processes current_file current status status_class status_label
+  local gpu_util gpu_model gpu_mem disk_pct log log_tail model stage purpose started card_id backend term_source
+
+  DASHBOARD_DEVICE_TOTAL=$((DASHBOARD_DEVICE_TOTAL + 1))
+  load_account "$account"
+  REMOTE_ROOT="${remote%/}"
+  validate_remote_root "$REMOTE_ROOT"
+  probe="$(remote_probe)"
+  online="$(kv_get "$probe" online)"
+  host="$(kv_get "$probe" host)"
+  gpu="$(kv_get "$probe" gpu)"
+  disk="$(kv_get "$probe" disk)"
+  processes="$(kv_get "$probe" processes)"
+  current_file="$(latest_job_file_for_device "$account" "$REMOTE_ROOT")"
+  current="-"
+  status="idle"
+  log=""
+  log_tail="[no recorded run]"
+  model="-"
+  stage="-"
+  purpose=""
+  started="-"
+  backend="detach"
+  term_source="processes"
+  if [ -n "$current_file" ]; then
+    current="$(job_get "$current_file" NAME)"
+    status="$(job_remote_status_summary "$current_file")"
+    log="$(job_get "$current_file" LOG_PATH)"
+    backend="$(job_get "$current_file" BACKEND)"
+    model="$(job_get "$current_file" MODEL)"
+    stage="$(job_get "$current_file" STAGE)"
+    purpose="$(job_get "$current_file" PURPOSE)"
+    started="$(job_get "$current_file" STARTED_AT)"
+    term_source="$log"
+    [ "${backend:-detach}" != "tmux" ] || term_source="tmux:$(job_get "$current_file" TMUX_SESSION)"
+    [ -n "$model" ] || model="-"
+    [ -n "$stage" ] || stage="-"
+    if [ "$lines" -gt 0 ]; then
+      log_tail="$(remote_job_tail "$account" "$REMOTE_ROOT" "$current_file" "$lines")"
+    else
+      log_tail="[log hidden: --lines 0]"
+    fi
+  elif [ -n "$processes" ]; then
+    log_tail="$processes"
+  fi
+
+  status_class="$(dashboard_status_class "$online" "$status")"
+  status_label="$(dashboard_status_label "$status_class")"
+  case "$status_class" in
+    training) DASHBOARD_TRAINING_TOTAL=$((DASHBOARD_TRAINING_TOTAL + 1)) ;;
+    idle) DASHBOARD_IDLE_TOTAL=$((DASHBOARD_IDLE_TOTAL + 1)) ;;
+    error) DASHBOARD_ERROR_TOTAL=$((DASHBOARD_ERROR_TOTAL + 1)) ;;
+    offline) DASHBOARD_OFFLINE_TOTAL=$((DASHBOARD_OFFLINE_TOTAL + 1)) ;;
+  esac
+  [ "${online:-no}" = "yes" ] && DASHBOARD_ONLINE_TOTAL=$((DASHBOARD_ONLINE_TOTAL + 1))
+
+  gpu="${gpu:--}"
+  disk="${disk:--}"
+  gpu_util="$(dashboard_pct "$gpu")"
+  disk_pct="$(dashboard_pct "$disk")"
+  gpu_model="$(dashboard_gpu_model "$gpu")"
+  gpu_mem="$(dashboard_gpu_mem "$gpu")"
+  card_id="$(sanitize_name "${device}-${account}")"
+  DASHBOARD_HEAT_CELLS="${DASHBOARD_HEAT_CELLS}<span class=\"heat-cell heat-${status_class}\" title=\"$(html_escape "$device · ${gpu_util}%")\" style=\"--v:${gpu_util}%\"></span>"
+
+  printf '<article class="mc mc-%s" data-status="%s">\n' "$status_class" "$status_class"
+  printf '<div class="mc-head"><div class="mc-head-l"><div class="mc-id"><span class="mc-bracket">[</span><span class="mc-id-text">%s</span><span class="mc-bracket">]</span></div><div class="mc-name">%s</div><div class="mc-sub"><span>%s</span><span class="sep">·</span><span>%s</span></div></div><div class="mc-head-r"><span class="st-badge"><span class="st-dot"></span>%s</span><div class="mc-uptime">%s</div></div></div>\n' \
+    "$(html_escape "$device")" "$(html_escape "$account")" "$(html_escape "${host:--}")" "$(html_escape "${tags:--}")" "$(html_escape "$status_label")" "$(html_escape "${status:-unknown}")"
+  printf '<div class="mc-agg"><div class="mc-agg-l"><span class="agg-k">GPU UTIL</span><span class="agg-v">%s<span class="pct-s">%%</span></span></div><div class="ubar-wrap"><div class="ubar-track"></div><div class="ubar-fill" style="width:%s%%"></div></div><div class="mc-agg-r">%s</div></div>\n' \
+    "$(html_escape "$gpu_util")" "$(html_escape "$gpu_util")" "$(html_escape "$gpu_mem")"
+  printf '<div class="gpu-row"><div class="gpu-row-head"><span class="gpu-tag">GPU</span><span class="gpu-model">%s</span><span class="gpu-util-pct">%s<span class="pct-s">%%</span></span></div><div class="gpu-row-meta"><span class="meta-cell"><span class="meta-k">DISK</span><span class="meta-v">%s</span><span class="meta-mini-bar"><span style="width:%s%%"></span></span></span><span class="meta-cell"><span class="meta-k">REMOTE</span><span class="meta-v">%s</span></span></div></div>\n' \
+    "$(html_escape "$gpu_model")" "$(html_escape "$gpu_util")" "$(html_escape "$disk")" "$(html_escape "$disk_pct")" "$(html_escape "$REMOTE_ROOT")"
+  printf '<div class="mc-task"><div class="task-row"><span class="task-arrow">▸</span><span class="task-name">%s</span></div><div class="task-meta">%s · %s · %s</div>' \
+    "$(html_escape "$current")" "$(html_escape "$model")" "$(html_escape "$stage")" "$(html_escape "$started")"
+  [ -n "$purpose" ] && printf '<div class="task-purpose">%s</div>' "$(html_escape "$purpose")"
+  printf '</div>\n'
+  printf '<div class="mc-term"><div class="term-bar"><span class="term-dot"></span><span class="term-bar-t">%s</span><span class="term-bar-eta">last %s</span></div><pre class="term-body" data-term-id="%s">%s</pre></div>\n' \
+    "$(html_escape "$term_source")" "$(html_escape "$lines")" "$(html_escape "$card_id")" "$(html_escape "$log_tail")"
+  printf '</article>\n'
+}
+
+dashboard_device_cards() {
+  local fleet="$1" lines="$2" device_file device account remote tags
+  if [ -n "$fleet" ]; then
+    for device_file in "$(fleet_dir "$fleet")"/*.conf; do
+      [ -f "$device_file" ] || continue
+      device="$(device_get "$device_file" NAME)"
+      account="$(device_get "$device_file" ACCOUNT)"
+      remote="$(device_get "$device_file" REMOTE_ROOT)"
+      tags="$(device_get "$device_file" TAGS)"
+      dashboard_device_card "$device" "$account" "$remote" "$tags" "$lines"
+    done
+  else
+    dashboard_device_card "current" "$PROJECT_ACCOUNT" "$REMOTE_ROOT" "project" "$lines"
+  fi
+}
+
+dashboard_run_tiles() {
+  local scope_fleet="$1" dir file name account remote model stage started log purpose
+  dir="$(jobs_dir)"
+  printf '<section class="run-panel"><div class="sec-t"><span class="sec-t-l">─ RUNS</span><span class="sec-t-line"></span></div><div class="run-list">\n'
+  if ls "$dir"/*.conf >/dev/null 2>&1; then
+    for file in "$dir"/*.conf; do
+      dashboard_job_in_scope "$file" "$scope_fleet" || continue
+      DASHBOARD_RUN_TOTAL=$((DASHBOARD_RUN_TOTAL + 1))
+      name="$(job_get "$file" NAME)"
+      account="$(job_get "$file" ACCOUNT)"
+      remote="$(job_get "$file" REMOTE_ROOT)"
+      model="$(job_get "$file" MODEL)"
+      stage="$(job_get "$file" STAGE)"
+      started="$(job_get "$file" STARTED_AT)"
+      log="$(job_get "$file" LOG_PATH)"
+      purpose="$(job_get "$file" PURPOSE)"
+      [ -n "$account" ] || account="${PROJECT_BOUND_ACCOUNT:-$PROJECT_ACCOUNT}"
+      [ -n "$remote" ] || remote="${PROJECT_BOUND_REMOTE_ROOT:-$REMOTE_ROOT}"
+      printf '<div class="run-chip"><div class="run-chip-h"><span>%s</span><span>%s</span></div><div class="run-chip-m">%s · %s · %s</div><div class="run-chip-f">%s</div><div class="run-chip-note">%s</div></div>\n' \
+        "$(html_escape "$name")" "$(html_escape "${stage:--}")" "$(html_escape "$account")" "$(html_escape "${model:--}")" "$(html_escape "$started")" "$(html_escape "$log")" "$(html_escape "$purpose")"
+    done
+  fi
+  if [ "$DASHBOARD_RUN_TOTAL" -eq 0 ]; then
+    printf '<div class="empty">NO RUNS RECORDED</div>\n'
+  fi
+  printf '</div></section>\n'
+}
+
+dashboard_state_path() {
+  local output="$1" dir base
+  dir="$(dirname "$output")"
+  base="$(basename "$output")"
+  case "$base" in
+    *.html) base="${base%.html}.state.js" ;;
+    *) base="$base.state.js" ;;
+  esac
+  printf '%s/%s\n' "$dir" "$base"
+}
+
+js_string() {
+  printf '"'
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+  printf '"'
+}
+
+base64_file_compact() {
+  base64 < "$1" | tr -d '\n'
+}
+
+dashboard_css() {
+  cat <<'EOF'
+:root{--bg:#fdf6e3;--bg-2:#f3ead0;--card:#fffbef;--card-2:#f7efd5;--border:#e1d6a8;--border-2:#cdc295;--border-soft:#ebe1b8;--fg:#073642;--fg-dim:#586e75;--dim:#93a1a1;--muted:#93a1a1;--muted-strong:#657b83;--ok:#859900;--hot:#dc322f;--warm:#b58900;--cool:#268bd2;--err:#dc322f;--off:#93a1a1;--off-bg:#e1d6a8;--term-bg:#002b36;--term-fg:#93a1a1}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg)}body{font-family:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-font-smoothing:antialiased;overflow-x:hidden}.app{min-height:100vh;background:radial-gradient(ellipse 1200px 600px at 50% -200px,rgba(133,153,0,.09),transparent 70%),linear-gradient(var(--bg),var(--bg-2));display:flex;flex-direction:column}.scanlines{position:fixed;inset:0;pointer-events:none;z-index:50;background-image:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.025) 3px,rgba(0,0,0,0) 4px);mix-blend-mode:multiply}.vignette{position:fixed;inset:0;pointer-events:none;z-index:49;box-shadow:inset 0 0 180px rgba(0,0,0,.08)}.topbar{position:sticky;top:0;z-index:30;background:rgba(253,246,227,.88);backdrop-filter:blur(10px) saturate(150%);border-bottom:1px solid var(--border);padding:14px 22px 0;display:grid;grid-template-columns:minmax(280px,1fr) minmax(420px,1.4fr) minmax(260px,1fr);grid-template-rows:auto auto;grid-template-areas:"l c r" "f f f";gap:16px 24px;align-items:center}.topbar-l{grid-area:l;display:flex;flex-direction:column;gap:6px}.topbar-c{grid-area:c;display:flex;justify-content:center}.topbar-r{grid-area:r;display:flex;justify-content:flex-end;align-items:center;gap:20px}.filters{grid-area:f;display:flex;gap:8px;padding:10px 0;border-top:1px dashed var(--border-2);align-items:center}.brand{display:flex;align-items:center;gap:10px}.brand-mark{width:22px;height:22px;display:inline-grid;place-items:center;background:var(--ok);color:var(--bg);font-size:14px;border-radius:3px;box-shadow:0 0 12px rgba(133,153,0,.38)}.brand-name{font-size:17px;font-weight:700;letter-spacing:.14em}.brand-sub{font-size:11px;font-weight:600;letter-spacing:.22em;color:var(--fg-dim);padding:2px 6px;border:1px solid var(--border);border-radius:2px}.brand-ver{font-size:10px;color:var(--muted);margin-left:4px}.brand-tagline{font-size:11px;color:var(--fg-dim);letter-spacing:.02em}.agg-block{width:100%;max-width:560px;border:1px solid var(--border);background:var(--card);padding:8px 12px 9px;border-radius:4px}.agg-block-h{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.12em;margin-bottom:6px}.heatmap{display:flex;gap:2px;height:16px;margin-bottom:6px}.heat-cell{display:block;flex:1;border-radius:1px;background:var(--off-bg);opacity:.65}.heat-training{background:var(--ok);opacity:.9}.heat-idle{background:var(--cool);opacity:.45}.heat-error{background:var(--err);opacity:.85}.heat-offline{background:var(--off-bg);opacity:.7}.agg-block-f{font-size:10.5px;letter-spacing:.04em;color:var(--dim)}.clock{text-align:right}.clock-t{font-size:22px;font-weight:600;letter-spacing:.06em;font-variant-numeric:tabular-nums}.clock-d{font-size:10.5px;letter-spacing:.08em;margin-top:2px;color:var(--dim)}.refresh{display:flex;flex-direction:column;gap:4px;align-items:flex-end}.refresh>.dim{font-size:10px;letter-spacing:.14em;color:var(--dim)}.seg{display:flex;border:1px solid var(--border);border-radius:3px;overflow:hidden}.seg-btn{appearance:none;background:transparent;border:0;padding:4px 10px;color:var(--fg-dim);font:inherit;font-size:11px;border-right:1px solid var(--border);font-variant-numeric:tabular-nums}.seg-btn:last-child{border-right:0}.seg-btn.on{color:var(--bg);background:var(--ok)}.flt{appearance:none;background:transparent;border:1px solid var(--border);color:var(--fg-dim);font:inherit;font-size:11px;padding:5px 12px;cursor:pointer;border-radius:3px;display:inline-flex;align-items:center;gap:8px;letter-spacing:.02em}.flt-c{color:var(--muted);font-variant-numeric:tabular-nums;font-size:10px}.flt:hover{color:var(--fg);border-color:var(--fg-dim)}.flt.on{color:var(--bg);background:var(--ok);border-color:var(--ok)}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;padding:18px 22px 26px;flex:1}.mc{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:14px 14px 0;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden}.mc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent,var(--ok));opacity:.85}.mc-training{--accent:var(--ok)}.mc-idle{--accent:var(--cool)}.mc-error{--accent:var(--err);background:linear-gradient(180deg,rgba(220,50,47,.06),var(--card))}.mc-offline{--accent:var(--off);opacity:.72}.mc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.mc-head-l{display:flex;flex-direction:column;gap:3px;min-width:0}.mc-head-r{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.mc-id{font-size:10.5px;color:var(--dim);letter-spacing:.06em}.mc-bracket{color:var(--muted-strong)}.mc-id-text{color:var(--fg-dim);padding:0 1px}.mc-name{font-size:15px;font-weight:600;letter-spacing:.02em}.mc-sub{font-size:10.5px;color:var(--fg-dim);display:flex;gap:6px;align-items:center;min-width:0}.mc-sub span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mc-sub .sep{color:var(--muted-strong);flex:0 0 auto}.st-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;padding:3px 8px;border:1px solid var(--accent);border-radius:2px;letter-spacing:.06em;color:var(--accent);background:rgba(133,153,0,.07)}.st-dot{width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--accent);box-shadow:0 0 8px var(--accent)}.mc-idle .st-dot,.mc-offline .st-dot{box-shadow:none}.mc-uptime{font-size:10.5px;color:var(--dim);font-variant-numeric:tabular-nums;letter-spacing:.04em}.mc-agg{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:6px 8px;background:var(--card-2);border:1px solid var(--border-soft);border-radius:3px}.mc-agg-l{display:flex;align-items:baseline;gap:6px}.mc-agg-r{font-size:10.5px;color:var(--fg-dim);font-variant-numeric:tabular-nums}.agg-k{font-size:9.5px;letter-spacing:.14em;color:var(--dim)}.agg-v{font-size:14px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}.pct-s{font-size:10px;opacity:.7;margin-left:1px}.ubar-wrap{position:relative;width:100%;min-width:40px;height:3px}.ubar-track{position:absolute;inset:0;background:rgba(7,54,66,.10);border-radius:1px}.ubar-fill{position:absolute;left:0;top:0;height:3px;border-radius:1px;background:var(--accent);box-shadow:0 0 8px var(--accent);transition:width 1.2s cubic-bezier(.4,0,.2,1)}.gpu-row{display:flex;flex-direction:column;gap:7px}.gpu-row-head{display:flex;align-items:center;gap:10px;font-size:11px}.gpu-tag{padding:1px 5px;background:rgba(7,54,66,.08);color:var(--fg-dim);border-radius:2px;font-size:9.5px;letter-spacing:.08em;font-weight:600}.gpu-model{color:var(--fg-dim);flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gpu-util-pct{font-size:14px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}.gpu-row-meta{display:grid;grid-template-columns:1.1fr 1.4fr;gap:8px}.meta-cell{display:flex;align-items:center;gap:5px;font-size:10.5px;min-width:0}.meta-k{color:var(--dim);font-size:9px;letter-spacing:.1em;font-weight:600}.meta-v{color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta-mini-bar{flex:1;min-width:18px;height:3px;background:rgba(7,54,66,.10);border-radius:1px;overflow:hidden}.meta-mini-bar>span{display:block;height:100%;background:var(--accent)}.mc-task{padding:8px 10px;background:var(--card-2);border:1px solid var(--border-soft);border-left:2px solid var(--accent);border-radius:2px;display:flex;flex-direction:column;gap:3px}.task-row{display:flex;align-items:center;gap:6px;min-width:0}.task-arrow{color:var(--accent)}.task-name{font-size:12px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.task-meta,.task-purpose{font-size:10.5px;color:var(--fg-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mc-term{margin:0 -14px;background:var(--term-bg);border-top:1px solid var(--border)}.term-bar{display:flex;align-items:center;gap:8px;padding:5px 14px;font-size:10px;color:var(--dim);border-bottom:1px solid #073642;letter-spacing:.04em}.term-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:blink 2s ease-in-out infinite}.mc-idle .term-dot,.mc-offline .term-dot{box-shadow:none;animation:none}@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}.term-bar-t{flex:1;color:var(--term-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.term-bar-eta{color:var(--dim)}.term-body{margin:0;padding:10px 14px 12px;font-size:10.5px;line-height:1.55;color:var(--term-fg);height:260px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;scrollbar-width:thin;scrollbar-color:#073642 transparent}.term-body::-webkit-scrollbar{width:8px}.term-body::-webkit-scrollbar-thumb{background:#073642;border-radius:4px}.run-panel{padding:0 22px 72px}.sec-t{display:flex;align-items:center;gap:10px;font-size:10.5px;letter-spacing:.14em;color:var(--dim);font-weight:600;margin:2px 0 12px}.sec-t-line{flex:1;height:1px;background:var(--border)}.run-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}.run-chip{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:10px 12px;min-width:0}.run-chip-h{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--fg)}.run-chip-h span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.run-chip-m,.run-chip-f,.run-chip-note{font-size:10.5px;color:var(--fg-dim);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.run-chip-f{color:var(--dim)}.empty{border:1px dashed var(--border);color:var(--dim);padding:16px;font-size:12px;text-align:center}.ticker{position:fixed;left:0;right:0;bottom:0;z-index:25;height:28px;display:flex;align-items:center;background:rgba(253,246,227,.92);backdrop-filter:blur(8px);border-top:1px solid var(--border);font-size:10.5px;overflow:hidden}.ticker-tag{padding:4px 10px;background:var(--ok);color:var(--bg);font-weight:700;letter-spacing:.12em;margin-right:12px;height:100%;display:flex;align-items:center}.ticker-row{display:flex;gap:28px;white-space:nowrap;color:var(--fg-dim)}@media (max-width:900px){.topbar{grid-template-columns:1fr;grid-template-areas:"l" "c" "r" "f"}.topbar-c,.topbar-r{justify-content:flex-start}.grid{grid-template-columns:1fr;padding:14px 14px 28px}.filters{overflow:auto}.term-body{height:220px}}@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+EOF
+  cat <<'EOF'
+.grid-empty{margin:18px 22px 26px;border:1px dashed var(--border);border-radius:4px;background:rgba(255,251,239,.65);color:var(--fg-dim);padding:18px 20px;font-size:12px;letter-spacing:.04em}.grid-empty[hidden]{display:none}.flt[disabled]{opacity:.45;cursor:not-allowed}.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);margin-right:6px;vertical-align:middle}.stale .live-dot{background:var(--warm);box-shadow:none}.stale #ticker-generated{color:var(--warm)}
+EOF
+}
+
+dashboard_js() {
+  cat <<'EOF'
+(function(){
+  const pageKey = "autodl-dashboard:" + location.pathname;
+  const stateSrc = window.__AUTODL_STATE_SRC__;
+  const refreshSeconds = Number(window.__AUTODL_REFRESH_SECONDS__ || 0);
+  let currentFilter = sessionStorage.getItem(pageKey + ":filter") || "all";
+  function atBottom(el){ return el.scrollHeight - el.scrollTop - el.clientHeight < 24; }
+  function captureTerms(){
+    const terms = {};
+    document.querySelectorAll(".term-body").forEach((el) => {
+      const id = el.dataset.termId || "";
+      terms[id] = { top: el.scrollTop, follow: atBottom(el) };
+    });
+    return terms;
+  }
+  function restoreTerms(prev){
+    document.querySelectorAll(".term-body").forEach((el) => {
+      const id = el.dataset.termId || "";
+      const item = prev[id];
+      if (!item || item.follow) el.scrollTop = el.scrollHeight;
+      else el.scrollTop = item.top || 0;
+      el.addEventListener("scroll", saveScroll, { passive: true });
+    });
+  }
+  function saveScroll(){
+    const next = { pageY: window.scrollY, terms: captureTerms() };
+    sessionStorage.setItem(pageKey, JSON.stringify(next));
+  }
+  function setText(id, value){
+    const el = document.getElementById(id);
+    if (el) el.textContent = value == null ? "" : String(value);
+  }
+  function setHtml(id, value){
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = value || "";
+  }
+  function applyFilter(filter){
+    currentFilter = filter || "all";
+    sessionStorage.setItem(pageKey + ":filter", currentFilter);
+    document.querySelectorAll("[data-filter]").forEach((b) => b.classList.toggle("on", b.dataset.filter === currentFilter));
+    let visibleCount = 0;
+    document.querySelectorAll(".mc").forEach((card) => {
+      const visible = currentFilter === "all" || card.dataset.status === currentFilter;
+      card.hidden = !visible;
+      if (visible) visibleCount += 1;
+    });
+    const empty = document.getElementById("grid-empty");
+    if (empty) {
+      empty.hidden = visibleCount !== 0;
+      empty.textContent = currentFilter === "all" ? "没有设备。" : `没有匹配 ${currentFilter} 的设备。`;
+    }
+  }
+  function applyState(state){
+    if (!state) return;
+    const previousTerms = captureTerms();
+    const previousY = window.scrollY;
+    setText("brand-title", state.title);
+    setText("brand-project", state.project);
+    setText("clock-time", state.clock);
+    setText("clock-date", state.generatedAt);
+    setText("summary-online", `${state.onlineTotal}/${state.deviceTotal} 在线 · ${state.runTotal} RUNS`);
+    setText("summary-counts", `${state.trainingTotal} training · ${state.idleTotal} idle · ${state.errorTotal} error · ${state.offlineTotal} offline`);
+    setText("count-all", state.deviceTotal);
+    setText("count-training", state.trainingTotal);
+    setText("count-idle", state.idleTotal);
+    setText("count-error", state.errorTotal);
+    setText("count-offline", state.offlineTotal);
+    setHtml("heatmap", state.heatCellsHtml);
+    setHtml("device-grid", state.cardsHtml);
+    setHtml("runs-root", state.runsHtml);
+    setText("ticker-generated", `generated ${state.generatedAt} · polling ${refreshSeconds || 3}s`);
+    restoreTerms(previousTerms);
+    applyFilter(currentFilter);
+    window.scrollTo(0, previousY);
+  }
+  window.addEventListener("autodl-dashboard-state", (event) => applyState(event.detail));
+  function loadState(){
+    if (!stateSrc) return;
+    const script = document.createElement("script");
+    script.src = stateSrc + "?t=" + Date.now();
+    script.async = true;
+    script.onload = () => script.remove();
+    script.onerror = () => script.remove();
+    document.head.appendChild(script);
+  }
+  window.addEventListener("beforeunload", saveScroll);
+  window.addEventListener("pagehide", saveScroll);
+  document.querySelectorAll("[data-filter]").forEach((btn) => {
+    btn.addEventListener("click", () => applyFilter(btn.dataset.filter));
+  });
+  applyState(window.__AUTODL_DASHBOARD_STATE__);
+  const saved = JSON.parse(sessionStorage.getItem(pageKey) || "{}");
+  if (typeof saved.pageY === "number") window.scrollTo(0, saved.pageY);
+  window.setInterval(loadState, (refreshSeconds || 3) * 1000);
+})();
+EOF
+}
+
+render_dashboard_state() {
+  local fleet="$1" state_path="$2" lines="$3" generated_at title output_dir tmp_state cards_tmp runs_tmp heat_tmp
+  output_dir="$(dirname "$state_path")"
+  mkdir -p "$output_dir"
+  generated_at="$(date +%Y-%m-%dT%H:%M:%S%z)"
+  if [ -n "$fleet" ]; then
+    [ -d "$(fleet_dir "$fleet")" ] || die "Fleet not found: $fleet"
+    title="Fleet $fleet"
+  else
+    title="Current Remote"
+  fi
+
+  DASHBOARD_DEVICE_TOTAL=0
+  DASHBOARD_ONLINE_TOTAL=0
+  DASHBOARD_TRAINING_TOTAL=0
+  DASHBOARD_IDLE_TOTAL=0
+  DASHBOARD_ERROR_TOTAL=0
+  DASHBOARD_OFFLINE_TOTAL=0
+  DASHBOARD_RUN_TOTAL=0
+  DASHBOARD_HEAT_CELLS=""
+
+  cards_tmp="$(mktemp "$output_dir/.dashboard-cards.XXXXXX")" || die "mktemp failed"
+  runs_tmp="$(mktemp "$output_dir/.dashboard-runs.XXXXXX")" || { rm -f "$cards_tmp"; die "mktemp failed"; }
+  heat_tmp="$(mktemp "$output_dir/.dashboard-heat.XXXXXX")" || { rm -f "$cards_tmp" "$runs_tmp"; die "mktemp failed"; }
+  dashboard_device_cards "$fleet" "$lines" > "$cards_tmp"
+  dashboard_run_tiles "$fleet" > "$runs_tmp"
+  printf '%s' "$DASHBOARD_HEAT_CELLS" > "$heat_tmp"
+
+  tmp_state="$(mktemp "$output_dir/.dashboard-state.XXXXXX")" || { rm -f "$cards_tmp" "$runs_tmp" "$heat_tmp"; die "mktemp failed"; }
+  {
+    printf '(function(){const d=(s)=>new TextDecoder().decode(Uint8Array.from(atob(s),c=>c.charCodeAt(0)));'
+    printf 'const state={'
+    printf 'generatedAt:%s,' "$(js_string "$generated_at")"
+    printf 'clock:%s,' "$(js_string "$(date +%H:%M:%S)")"
+    printf 'title:%s,' "$(js_string "$title")"
+    printf 'project:%s,' "$(js_string "$PROJECT_ROOT")"
+    printf 'deviceTotal:%s,onlineTotal:%s,trainingTotal:%s,idleTotal:%s,errorTotal:%s,offlineTotal:%s,runTotal:%s,' \
+      "$DASHBOARD_DEVICE_TOTAL" "$DASHBOARD_ONLINE_TOTAL" "$DASHBOARD_TRAINING_TOTAL" "$DASHBOARD_IDLE_TOTAL" "$DASHBOARD_ERROR_TOTAL" "$DASHBOARD_OFFLINE_TOTAL" "$DASHBOARD_RUN_TOTAL"
+    printf 'heatCellsHtml:d("%s"),' "$(base64_file_compact "$heat_tmp")"
+    printf 'cardsHtml:d("%s"),' "$(base64_file_compact "$cards_tmp")"
+    printf 'runsHtml:d("%s")' "$(base64_file_compact "$runs_tmp")"
+    printf '};window.__AUTODL_DASHBOARD_STATE__=state;window.dispatchEvent(new CustomEvent("autodl-dashboard-state",{detail:state}));})();\n'
+  } > "$tmp_state"
+  mv "$tmp_state" "$state_path"
+  rm -f "$cards_tmp" "$runs_tmp" "$heat_tmp"
+}
+
+render_dashboard() {
+  local fleet="$1" output="$2" lines="$3" refresh_seconds="${4:-}" generated_at title output_dir tmp_output state_path state_src
+  output_dir="$(dirname "$output")"
+  mkdir -p "$output_dir"
+  generated_at="$(date +%Y-%m-%dT%H:%M:%S%z)"
+  if [ -n "$fleet" ]; then
+    [ -d "$(fleet_dir "$fleet")" ] || die "Fleet not found: $fleet"
+    title="Fleet $fleet"
+  else
+    title="Current Remote"
+  fi
+  state_path="$(dashboard_state_path "$output")"
+  state_src="$(basename "$state_path")"
+  render_dashboard_state "$fleet" "$state_path" "$lines"
+
+  tmp_output="$(mktemp "$output_dir/.dashboard.XXXXXX")" || die "mktemp failed"
+  {
+    printf '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AutoDL Remote Dashboard</title><style>'
+    dashboard_css
+    printf '</style>'
+    printf '</head><body><div class="app"><div class="scanlines"></div><div class="vignette"></div>'
+    printf '<header class="topbar"><div class="topbar-l"><div class="brand"><span class="brand-mark">◇</span><span class="brand-name">AUTODL</span><span class="brand-sub">MONITOR</span><span class="brand-ver">v%s</span></div><div class="brand-tagline">— <span id="brand-title">%s</span> · <span id="brand-project">%s</span> —</div></div>' "$(html_escape "$PROGRAM_VERSION")" "$(html_escape "$title")" "$(html_escape "$PROJECT_ROOT")"
+    printf '<div class="topbar-c"><div class="agg-block"><div class="agg-block-h"><span>TOTAL UTIL</span><span id="summary-online">loading</span></div><div id="heatmap" class="heatmap"></div><div id="summary-counts" class="agg-block-f">loading</div></div></div>'
+    printf '<div class="topbar-r"><div class="clock"><div id="clock-time" class="clock-t">%s</div><div id="clock-date" class="clock-d">%s</div></div><div class="refresh"><span class="dim">REFRESH</span><div class="seg">' "$(date +%H:%M:%S)" "$(html_escape "$generated_at")"
+    if [ -n "$refresh_seconds" ]; then
+      printf '<button class="seg-btn on">%ss</button>' "$(html_escape "$refresh_seconds")"
+    else
+      printf '<button class="seg-btn on">manual</button>'
+    fi
+    printf '</div></div></div><div class="filters"><button class="flt on" data-filter="all"><span>全部</span><span id="count-all" class="flt-c">0</span></button><button class="flt" data-filter="training"><span>训练中</span><span id="count-training" class="flt-c">0</span></button><button class="flt" data-filter="idle"><span>空闲</span><span id="count-idle" class="flt-c">0</span></button><button class="flt" data-filter="error"><span>异常</span><span id="count-error" class="flt-c">0</span></button><button class="flt" data-filter="offline"><span>离线</span><span id="count-offline" class="flt-c">0</span></button></div></header>'
+    printf '<main id="device-grid" class="grid"></main><div id="grid-empty" class="grid-empty" hidden></div><div id="runs-root"></div>'
+    printf '<div class="ticker"><span class="ticker-tag">EVT</span><div class="ticker-row"><span id="ticker-generated"><span class="live-dot"></span>generated %s</span><span>read-only dashboard</span><span>state updates without full page reload</span></div></div>' "$(html_escape "$generated_at")"
+    printf '<script>window.__AUTODL_REFRESH_SECONDS__=%s;window.__AUTODL_STATE_SRC__=%s;</script>' "${refresh_seconds:-0}" "$(js_string "$state_src")"
+    printf '<script src="%s"></script><script>' "$(html_escape "$state_src")"
+    dashboard_js
+    printf '</script></div></body></html>\n'
+  } > "$tmp_output"
+  mv "$tmp_output" "$output"
+}
+
+cmd_dashboard() {
+  load_project
+  local fleet="" output="" open_file=false watch_seconds="" lines=120 opened=false
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --fleet) fleet="$2"; shift 2 ;;
+      --output) output="$2"; shift 2 ;;
+      --open) open_file=true; shift ;;
+      --watch) watch_seconds="$2"; shift 2 ;;
+      --lines) lines="$2"; shift 2 ;;
+      *) die "unknown dashboard option: $1" ;;
+    esac
+  done
+  case "$lines" in
+    ""|*[!0-9]*) die "--lines must be a non-negative integer" ;;
+  esac
+  validate_tail_settings "$lines"
+  if [ -n "$watch_seconds" ]; then
+    case "$watch_seconds" in
+      ""|0|*[!0-9]*) die "--watch must be a positive integer number of seconds" ;;
+    esac
+  fi
+  [ -z "$output" ] && output="$PROJECT_ROOT/$HISTORY_DIR/dashboard.html"
+  if [ -n "$watch_seconds" ]; then
+    render_dashboard "$fleet" "$output" "$lines" "$watch_seconds"
+    info "Dashboard written: $output"
+    if [ "$open_file" = "true" ] && [ "$opened" = "false" ]; then
+      command -v open >/dev/null 2>&1 && open "$output" || info "open command not available."
+      opened=true
+    fi
+    while :; do
+      sleep "$watch_seconds"
+      render_dashboard_state "$fleet" "$(dashboard_state_path "$output")" "$lines"
+      info "Dashboard state updated: $(dashboard_state_path "$output")"
+    done
+  fi
+  render_dashboard "$fleet" "$output" "$lines"
+  info "Dashboard written: $output"
+  if [ "$open_file" = "true" ]; then
+    command -v open >/dev/null 2>&1 && open "$output" || info "open command not available."
+  fi
+}
+
+cmd_tmux_check() {
+  load_project
+  local account_override="" remote_override="" socket output rc
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      *) die "unknown tmux check option: $1" ;;
+    esac
+  done
+  apply_context_override "$account_override" "$remote_override"
+  socket="$(tmux_socket_path)"
+  output="$(ssh_capture "if command -v tmux >/dev/null 2>&1; then printf 'tmux=present\npath='; command -v tmux; tmux -V; printf 'socket=%s\n' $(shell_quote "$socket"); else printf 'tmux=missing\n'; printf '%s\n' $(shell_quote "$(tmux_missing_text)"); exit 127; fi" 2>&1)"
+  rc=$?
+  printf '%s\n' "$output"
+  return "$rc"
+}
+
+cmd_tmux_install() {
+  load_project
+  local account_override="" remote_override=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      *) die "unknown tmux install option: $1" ;;
+    esac
+  done
+  apply_context_override "$account_override" "$remote_override"
+  ssh_run "set -e; if command -v tmux >/dev/null 2>&1; then echo 'tmux=present'; tmux -V; exit 0; fi; if command -v apt-get >/dev/null 2>&1; then echo 'package_manager=apt-get'; export DEBIAN_FRONTEND=noninteractive; apt-get update && apt-get install -y tmux; elif command -v yum >/dev/null 2>&1; then echo 'package_manager=yum'; yum install -y tmux; elif command -v dnf >/dev/null 2>&1; then echo 'package_manager=dnf'; dnf install -y tmux; elif command -v apk >/dev/null 2>&1; then echo 'package_manager=apk'; apk add --no-cache tmux; else echo 'No supported package manager found. Please install tmux on the remote machine.' >&2; exit 127; fi; command -v tmux; tmux -V"
+}
+
+cmd_tmux_list() {
+  load_project
+  local account_override="" remote_override="" socket
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      *) die "unknown tmux list option: $1" ;;
+    esac
+  done
+  apply_context_override "$account_override" "$remote_override"
+  socket="$(tmux_socket_path)"
+  ssh_run "if ! command -v tmux >/dev/null 2>&1; then printf '%s\n' $(shell_quote "$(tmux_missing_text)"); exit 127; fi; if [ -S $(shell_quote "$socket") ]; then tmux -S $(shell_quote "$socket") list-sessions -F '#{session_name} #{session_windows} windows created=#{session_created_string} attached=#{session_attached}'; else echo 'No AutoDL Remote tmux sessions.'; fi"
+}
+
+cmd_tmux_capture() {
+  load_project
+  local account_override="" remote_override="" lines=120 session="" socket
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --lines) lines="$2"; shift 2 ;;
+      --) shift; break ;;
+      *) break ;;
+    esac
+  done
+  case "$lines" in
+    ""|*[!0-9]*) die "--lines must be a non-negative integer" ;;
+  esac
+  validate_tail_settings "$lines"
+  [ $# -gt 0 ] || die "tmux capture requires a session name"
+  session="$(sanitize_name "$1")"
+  apply_context_override "$account_override" "$remote_override"
+  socket="$(tmux_socket_path)"
+  remote_tmux_capture "$session" "$socket" "$lines"
+}
+
+cmd_tmux_attach_cmd() {
+  load_project
+  local account_override="" remote_override="" session="" socket cmd
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --) shift; break ;;
+      *) break ;;
+    esac
+  done
+  [ $# -gt 0 ] || die "tmux attach-cmd requires a session name"
+  session="$(sanitize_name "$1")"
+  apply_context_override "$account_override" "$remote_override"
+  socket="$(tmux_socket_path)"
+  cmd="ssh -p $(shell_quote "$ACCOUNT_PORT")"
+  [ -z "$ACCOUNT_KEY" ] || cmd="$cmd -i $(shell_quote "$ACCOUNT_KEY")"
+  cmd="$cmd -t $(shell_quote "$ACCOUNT_TARGET") $(shell_quote "tmux -S $(shell_quote "$socket") attach -t $(shell_quote "$session")")"
+  printf '%s\n' "$cmd"
+}
+
+cmd_tmux_kill() {
+  load_project
+  local account_override="" remote_override="" session="" socket
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --account) account_override="$2"; shift 2 ;;
+      --remote) remote_override="$2"; shift 2 ;;
+      --) shift; break ;;
+      *) break ;;
+    esac
+  done
+  [ $# -gt 0 ] || die "tmux kill requires a session name"
+  session="$(sanitize_name "$1")"
+  apply_context_override "$account_override" "$remote_override"
+  socket="$(tmux_socket_path)"
+  ssh_run "if ! command -v tmux >/dev/null 2>&1; then printf '%s\n' $(shell_quote "$(tmux_missing_text)"); exit 127; fi; tmux -S $(shell_quote "$socket") kill-session -t $(shell_quote "$session")"
+}
+
+cmd_tmux() {
+  [ $# -gt 0 ] || die "tmux requires a subcommand"
+  local sub="$1"
+  shift
+  case "$sub" in
+    check) cmd_tmux_check "$@" ;;
+    install) cmd_tmux_install "$@" ;;
+    list|ls) cmd_tmux_list "$@" ;;
+    capture) cmd_tmux_capture "$@" ;;
+    attach-cmd) cmd_tmux_attach_cmd "$@" ;;
+    kill) cmd_tmux_kill "$@" ;;
+    *) die "unknown tmux command: $sub" ;;
+  esac
+}
+
+cmd_shutdown() {
+  load_project
+  local wait_seconds=8 output rc
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --wait) wait_seconds="$2"; shift 2 ;;
+      *) die "unknown shutdown option: $1" ;;
+    esac
+  done
+
+  info "Requesting remote shutdown for $ACCOUNT_TARGET:$ACCOUNT_PORT"
+  output="$(ssh_capture "sync || true; if command -v shutdown >/dev/null 2>&1; then echo method=shutdown; nohup shutdown >/dev/null 2>&1 </dev/null & elif command -v poweroff >/dev/null 2>&1; then echo method=poweroff; nohup poweroff >/dev/null 2>&1 </dev/null & elif command -v halt >/dev/null 2>&1; then echo method=halt; nohup halt >/dev/null 2>&1 </dev/null & else echo method=missing; exit 127; fi" 2>&1)"
+  rc=$?
+  [ -n "$output" ] && printf '%s\n' "$output"
+
+  if [ "$rc" -ne 0 ] && [ "$rc" -ne 255 ]; then
+    info "shutdown_request=failed rc=$rc"
+    return "$rc"
+  fi
+  if [ "$rc" -eq 255 ]; then
+    info "shutdown_request=connection_closed rc=255"
+  else
+    info "shutdown_request=sent rc=$rc"
+  fi
+
+  sleep "$wait_seconds"
+  if ssh_capture "true" >/dev/null 2>&1; then
+    info "shutdown_status=still_reachable"
+    info "Remote is still reachable; shutdown may not have taken effect."
+    return 1
+  fi
+  info "shutdown_status=disconnected"
+  info "SSH is disconnected; remote is likely shutting down or already powered off."
+  write_history shutdown "wait=$wait_seconds rc=$rc"
+}
+
+cmd_model_dir() {
+  load_project
+  local create=false
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --mkdir) create=true; shift ;;
+      *) die "unknown model-dir option: $1" ;;
+    esac
+  done
+  if [ "$create" = "true" ]; then
+    ensure_remote_dir "$PROJECT_MODEL_DIR"
+  fi
+  info "$PROJECT_MODEL_DIR"
+}
+
+cmd_put_run() {
+  local uploads=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --) shift; break ;;
+      *) uploads+=("$1"); shift ;;
+    esac
+  done
+  [ "${#uploads[@]}" -gt 0 ] || die "put-run requires at least one local path before --"
+  [ $# -gt 0 ] || die "put-run requires a command after --"
+  local path
+  for path in "${uploads[@]}"; do
+    cmd_put "$path"
+  done
+  cmd_exec -- "$@"
+}
+
+cmd_shell() {
+  load_project
+  ensure_ssh_master || return $?
+  ssh_common_args
+  ssh -t "${SSH_ARGS[@]}" "$ACCOUNT_TARGET" "cd $(shell_quote "$REMOTE_ROOT") && exec bash -l"
+}
+
+cmd_history() {
+  load_project
+  local lines=20 file
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --lines) lines="$2"; shift 2 ;;
+      *) die "unknown history option: $1" ;;
+    esac
+  done
+  file="$PROJECT_ROOT/$HISTORY_DIR/history.jsonl"
+  [ -f "$file" ] || { info "No history yet."; return 0; }
+  tail -n "$lines" "$file"
+}
+
+main() {
+  [ $# -gt 0 ] || { usage; exit 0; }
+  local cmd="$1"
+  shift
+  case "$cmd" in
+    -h|--help|help) usage ;;
+    -V|--version|version) cmd_version ;;
+    account) cmd_account "$@" ;;
+    bind) cmd_bind "$@" ;;
+    doctor) cmd_doctor "$@" ;;
+    model-dir) cmd_model_dir "$@" ;;
+    fleet) cmd_fleet "$@" ;;
+    dashboard) cmd_dashboard "$@" ;;
+    tmux) cmd_tmux "$@" ;;
+    exec) cmd_exec "$@" ;;
+    put-run) cmd_put_run "$@" ;;
+    put|sync-up) cmd_put "$@" ;;
+    get|sync-down) cmd_get "$@" ;;
+    tree) cmd_tree "$@" ;;
+    ls) cmd_ls "$@" ;;
+    cat) cmd_cat "$@" ;;
+    tail) cmd_tail "$@" ;;
+    job) cmd_job "$@" ;;
+    run) cmd_run "$@" ;;
+    shutdown) cmd_shutdown "$@" ;;
+    shell) cmd_shell "$@" ;;
+    history) cmd_history "$@" ;;
+    *) die "unknown command: $cmd" ;;
+  esac
+}
+
+main "$@"

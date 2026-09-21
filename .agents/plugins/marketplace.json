@@ -1,0 +1,20 @@
+{
+  "name": "awesome-codex-research",
+  "interface": {
+    "displayName": "Awesome Codex Research"
+  },
+  "plugins": [
+    {
+      "name": "autodl-remote",
+      "source": {
+        "source": "local",
+        "path": "./plugins/autodl-remote"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Research Infrastructure"
+    }
+  ]
+}

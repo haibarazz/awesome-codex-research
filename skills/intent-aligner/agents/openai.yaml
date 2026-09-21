@@ -1,0 +1,4 @@
+interface:
+  display_name: "Intent Aligner"
+  short_description: "Lightweight intent replay and clarification"
+  default_prompt: "Use $intent-aligner to restate my request and ask only the key unresolved questions."
