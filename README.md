@@ -1,46 +1,118 @@
 # awesome-codex-research
 
-Personal, inspectable Codex workflows for research and machine-learning work.
+<p align="center">
+  <img src="docs/assets/research-workflow-hero.png" alt="科研工作流中的 Codex、研究者与远程 GPU 协作" width="100%">
+</p>
 
-This repository is designed to hold two kinds of reusable capability:
+<p align="center">
+  <img src="https://img.shields.io/badge/Codex-Skills%20%2B%20Plugins-2563EB?style=for-the-badge" alt="Codex Skills and Plugins">
+  <img src="https://img.shields.io/badge/Research-Workflow-F97316?style=for-the-badge" alt="Research Workflow">
+  <img src="https://img.shields.io/badge/License-Mixed%20%2F%20See%20Sources-0F172A?style=for-the-badge" alt="License: mixed">
+</p>
 
-- standalone skills, each with its own `SKILL.md`;
-- installable Codex plugins, which can bundle skills, MCP servers, scripts, and
-  other supporting assets.
+这是我的 Codex 科研工作流能力仓库。
 
-## Current contents
+它不把所有东西都塞成一个巨大的 prompt，而是把平时反复使用的能力拆成两类：
 
-The first bundled plugin is `autodl-remote`. It provides a local CLI and MCP
-server for controlling AutoDL or SSH-backed research machines, including
-explicit file transfer, detached jobs, run metadata, fleet operations, and
-optional tmux monitoring.
+- **独立 Skill**：可以单独安装、单独触发的 `SKILL.md` 工作流；
+- **Codex Plugin**：可以把多个 Skill、MCP server、脚本和资源一起安装的能力包。
 
-See [the capability catalog](docs/catalog.md) for source and provenance details.
+目标是让科研工作中的检索、写作、审稿、实验、远程 GPU、结果核验和资料沉淀，都逐步变成可复用、可检查、可迭代的工作流。
 
-## Repository layout
+## 当前能力
+
+<table>
+  <tr>
+    <td width="68%">
+      <h3>AutoDL Remote Plugin</h3>
+      <p>通过本地 CLI 和 MCP server 控制 AutoDL / SSH 远程机器，支持文件传输、远程命令、后台任务、实验 run metadata、fleet、tmux 和只读 dashboard。</p>
+      <p><a href="https://github.com/haibarazz/AutoDL-Remote">查看原始上游仓库</a></p>
+    </td>
+    <td width="32%" align="center">
+      <img src="docs/assets/research-workflow-mascot.png" alt="科研工作流卡通插画" width="220">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h3>intent-aligner Skill</h3>
+      <p>在实现、实验、写作或规划之前做轻量意图对齐，明确目标、范围、默认假设和不做什么，减少工作流跑偏。</p>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+完整来源、版本和本地改动记录见 [`docs/catalog.md`](docs/catalog.md)。
+
+## 目录结构
 
 ```text
 .
-├── .agents/plugins/marketplace.json  # repo-local Codex plugin catalog
-├── plugins/                          # installable plugin bundles
-├── skills/                           # future standalone skills
-├── docs/                             # catalog and contributor guidance
-└── scripts/                          # repository validation helpers
+├── .agents/plugins/marketplace.json  # 仓库级 Codex plugin marketplace
+├── plugins/                          # 可安装的 plugin 包
+│   └── autodl-remote/
+│       ├── .codex-plugin/plugin.json
+│       ├── skills/
+│       ├── mcp/
+│       ├── bin/
+│       └── config/
+├── skills/                           # 不属于某个 plugin 的独立 Skill
+│   └── intent-aligner/
+├── docs/                             # 目录、来源和视觉资源
+└── scripts/                          # 本地验证脚本
 ```
 
-## Validate locally
+原则很简单：**plugin 内部拥有的 Skill 就留在 plugin 内部，不重复复制到根目录；真正独立的 Skill 才放进 `skills/`。**
+
+## 快速开始
+
+克隆仓库并检查结构：
 
 ```bash
+git clone https://github.com/haibarazz/awesome-codex-research.git
+cd awesome-codex-research
 python3 scripts/validate_repository.py
 ```
 
-The validator checks plugin manifests, marketplace entries, skill metadata,
-and JSON configuration. It does not connect to AutoDL or execute remote jobs.
+将仓库级 marketplace 加入 Codex：
 
-## Adding a capability
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin install autodl-remote@awesome-codex-research
+```
 
-Keep the original entrypoint and resource layout intact. Add a catalog entry
-with the upstream repository, version, license, import date, and whether local
-changes were made. Do not place credentials or machine-specific bindings in
-this repository.
+如果只需要独立 Skill，可以直接把对应目录安装到本机 Codex skills 目录，或通过 Codex 的 skill installer 指向具体路径。
 
+## AutoDL Remote 的边界
+
+AutoDL Remote 是一个薄的 SSH 工具层，仓库只负责保存和分发 plugin，不在这里保存任何机器凭据、密码、Keychain 内容、项目绑定或远程数据。
+
+远程实验的基本原则是：
+
+1. 可复用的代码和配置先在本地修改；
+2. 需要运行时显式上传到远程机器；
+3. 远程先检查日志，再按需下载小结果；
+4. 大模型、数据集、checkpoint 和训练输出默认留在远端；
+5. 破坏性操作必须显式确认。
+
+## 加入新的 Skill 或 Plugin
+
+新增能力时，请保留这些信息：
+
+- 能力名称和入口文件；
+- 上游仓库、版本或 commit；
+- license 和作者归属；
+- 是否做过本地改动；
+- 需要哪些脚本、MCP、环境或外部凭据；
+- 如何验证安装成功。
+
+不要把 API key、SSH 私钥、`.env`、`.autodl-remote/`、真实论文数据或训练产物提交到仓库。
+
+## 本地验证
+
+```bash
+python3 scripts/validate_repository.py
+node --check plugins/autodl-remote/mcp/server.mjs
+plugins/autodl-remote/bin/autodl-remote --version
+```
+
+这个仓库更看重“来源清楚、边界清楚、结果可核验”，而不是一次性堆很多未经验证的 Skill。
