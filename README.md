@@ -12,7 +12,7 @@
 
 这是我的 Codex 科研工作流能力仓库。
 
-它不把所有东西都塞成一个巨大的 prompt，而是把平时反复使用的能力拆成两类：
+我把平时反复使用的能力拆成两类：
 
 - **独立 Skill**：可以单独安装、单独触发的 `SKILL.md` 工作流；
 - **Codex Plugin**：可以把多个 Skill、MCP server、脚本和资源一起安装的能力包。
@@ -29,7 +29,7 @@
       <p><a href="https://github.com/haibarazz/AutoDL-Remote">查看原始上游仓库</a></p>
     </td>
     <td width="32%" align="center">
-      <img src="docs/assets/research-workflow-mascot.png" alt="科研工作流卡通插画" width="220">
+      <img src="docs/assets/research-workflow-mascot.png" alt="科研工作流卡通插画" width="180">
     </td>
   </tr>
   <tr>
@@ -37,7 +37,9 @@
       <h3>intent-aligner Skill</h3>
       <p>在实现、实验、写作或规划之前做轻量意图对齐，明确目标、范围、默认假设和不做什么，减少工作流跑偏。</p>
     </td>
-    <td></td>
+    <td align="center">
+      <img src="docs/assets/intent-aligner.png" alt="intent-aligner 意图对齐插画" width="180">
+    </td>
   </tr>
 </table>
 
@@ -81,38 +83,3 @@ codex plugin install autodl-remote@awesome-codex-research
 ```
 
 如果只需要独立 Skill，可以直接把对应目录安装到本机 Codex skills 目录，或通过 Codex 的 skill installer 指向具体路径。
-
-## AutoDL Remote 的边界
-
-AutoDL Remote 是一个薄的 SSH 工具层，仓库只负责保存和分发 plugin，不在这里保存任何机器凭据、密码、Keychain 内容、项目绑定或远程数据。
-
-远程实验的基本原则是：
-
-1. 可复用的代码和配置先在本地修改；
-2. 需要运行时显式上传到远程机器；
-3. 远程先检查日志，再按需下载小结果；
-4. 大模型、数据集、checkpoint 和训练输出默认留在远端；
-5. 破坏性操作必须显式确认。
-
-## 加入新的 Skill 或 Plugin
-
-新增能力时，请保留这些信息：
-
-- 能力名称和入口文件；
-- 上游仓库、版本或 commit；
-- license 和作者归属；
-- 是否做过本地改动；
-- 需要哪些脚本、MCP、环境或外部凭据；
-- 如何验证安装成功。
-
-不要把 API key、SSH 私钥、`.env`、`.autodl-remote/`、真实论文数据或训练产物提交到仓库。
-
-## 本地验证
-
-```bash
-python3 scripts/validate_repository.py
-node --check plugins/autodl-remote/mcp/server.mjs
-plugins/autodl-remote/bin/autodl-remote --version
-```
-
-这个仓库更看重“来源清楚、边界清楚、结果可核验”，而不是一次性堆很多未经验证的 Skill。
