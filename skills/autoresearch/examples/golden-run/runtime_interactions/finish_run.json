@@ -1,0 +1,58 @@
+{
+  "accepted": true,
+  "allowed_next_actions": [
+    "PROMOTE_RESEARCH_BASE",
+    "ASSIGN_REFERENCE_BASELINE",
+    "inspect"
+  ],
+  "result": {
+    "artifacts_written": [
+      "experiments/E001.md",
+      "logs/research/volume_001.md",
+      "logs/runs/E001/A01.jsonl"
+    ],
+    "attempt_id": "A01",
+    "budget": {
+      "consumed": {
+        "attempts_started": 1,
+        "cost": 1.0,
+        "experiments_started": 1,
+        "run_seconds": 301.0
+      },
+      "limits": {
+        "cost_unit": "GPU_HOURS",
+        "max_cost": 12.0,
+        "max_experiments": 4,
+        "max_run_seconds": 4000.0
+      },
+      "new_experiment_limit_reached": false,
+      "terminal": false,
+      "time_or_cost_exhausted": false
+    },
+    "budget_overruns": [],
+    "command": "finish-run",
+    "controller_status": "CONTINUE",
+    "experiment_id": "E001",
+    "hypothesis_verdict": "SUPPORTED",
+    "node_id": "RN-0002",
+    "promotion_gate": {
+      "allowed_next_actions": [],
+      "reason": "Justified single run passed provisionally",
+      "status": "ELIGIBLE"
+    },
+    "role_events": [
+      {
+        "benchmark_id": "golden-benchmark-v1",
+        "created_at": "2026-07-19T12:00:00Z",
+        "event_type": "REPLACED",
+        "evidence_ref": "experiments/E001.md",
+        "node_id": "RN-0002",
+        "previous_node_id": "RN-0001",
+        "reason": "Reconciled the best valid primary metric after result writeback",
+        "role": "CHAMPION"
+      }
+    ],
+    "run_outcome": "NORMAL_EARLY_STOP"
+  },
+  "revision": 6
+}

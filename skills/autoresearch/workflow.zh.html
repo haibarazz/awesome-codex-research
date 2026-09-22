@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AutoResearch Skill 的中文可视化工作流：从数据集与目标对齐，到论文调研、实验循环、阶段反思和终止判定。">
+  <title>AutoResearch 自动研究工作流</title>
+  <link rel="stylesheet" href="assets/workflow.css">
+</head>
+<body>
+  <a class="skip-link" href="#workflow-map">跳到工作流</a>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">项目内 Skill · 持续更新</p>
+        <h1>AutoResearch 自动研究工作流</h1>
+        <p class="hero-lede">把数据集、目标和预算转化为可复现的全自动科研：启动前进行一次人工确认，之后由 AI 自主调研、复现、实验、反思和切换路线；只有三类预定义硬门允许临时人工审查。</p>
+      </div>
+      <div class="hero-actions">
+        <nav class="language-switch" aria-label="语言选择">
+          <a href="workflow.zh.html" aria-current="page" data-language-link>中文</a>
+          <a href="workflow.en.html" data-language-link>EN</a>
+        </nav>
+        <div class="version-stamp">Living Workflow · 2026-07-16</div>
+      </div>
+    </header>
+
+    <nav class="source-bar" aria-label="核心文件入口">
+      <a class="source-link" href="SKILL.md">◎ SKILL.md</a>
+      <a class="source-link" href="../CONTEXT.md">✎ CONTEXT.md</a>
+      <a class="source-link" href="references/research_contract.md">▣ Research Contract</a>
+      <a class="source-link" href="prompts/stage_reflection.md">↻ Stage Reflection</a>
+    </nav>
+
+    <section class="document-architecture panel" aria-labelledby="document-architecture-heading">
+      <div class="architecture-head">
+        <div>
+          <p class="architecture-kicker">先理解文档角色</p>
+          <h2 id="document-architecture-heading">Skill 如何把研究规则变成项目实际文档</h2>
+        </div>
+        <p>Skill 负责总路由，Prompt 负责当前步骤，Rules 负责约束，Template 负责输出骨架；AI 最终在具体科研项目中生成并维护真实文档。</p>
+      </div>
+
+      <div class="architecture-flow">
+        <article class="architecture-card architecture-skill">
+          <span class="architecture-label">总导演 · Router</span>
+          <h3><a href="SKILL.md">SKILL.md</a></h3>
+          <p>判断当前研究阶段，并决定接下来读取哪些 Prompt、规则和模板。</p>
+        </article>
+
+        <span class="architecture-connector" aria-hidden="true"></span>
+
+        <div class="architecture-pair">
+          <article class="architecture-card architecture-prompt">
+            <span class="architecture-label">怎么做</span>
+            <h3>Prompt</h3>
+            <p>告诉 AI 当前阶段如何分析、提问、审查或反思。</p>
+            <a href="prompts/research_bootstrap.md">例如：Research Bootstrap</a>
+          </article>
+          <article class="architecture-card architecture-rules">
+            <span class="architecture-label">不能违反什么</span>
+            <h3>Rules</h3>
+            <p>Contract、Playbook 和 Reference 保存长期研究规则。</p>
+            <a href="references/research_contract.md">例如：Research Contract</a>
+          </article>
+        </div>
+
+        <span class="architecture-connector" aria-hidden="true"></span>
+
+        <article class="architecture-card architecture-template">
+          <span class="architecture-label">输出骨架</span>
+          <h3>Template</h3>
+          <p>规定某类项目文档应该包含什么，但模板本身不是本次实验记录。</p>
+          <a href="templates/dataset_profile.md">例如：Dataset Profile 模板</a>
+        </article>
+
+        <span class="architecture-connector" aria-hidden="true"></span>
+
+        <article class="architecture-card architecture-output">
+          <span class="architecture-label">项目真实状态与证据</span>
+          <h3>实际生成文档</h3>
+          <p><code>DATASET_PROFILE.md</code>、<code>RESEARCH_BRIEF.md</code>、<code>BENCHMARK.md</code>、实验日志与 Stage Summary。</p>
+        </article>
+      </div>
+
+      <div class="architecture-support" aria-label="特殊说明文件">
+        <p><strong>渐进式读取：</strong><code>SKILL.md</code> 与唯一的 <code>ALWAYS</code> 契约组成常驻上下文；每轮只激活一个 <code>PHASE</code>，模板、日志与详细字段规范保持 <code>ON_DEMAND</code>。</p>
+        <p><strong><a href="../CONTEXT.md">CONTEXT.md</a></strong>：记录我们如何开发和裁决这套 Skill，不是实验运行时生成的科研文档。</p>
+        <p><strong>Workflow HTML</strong>：帮助人和 AI 理解文件关系与生命周期，只负责可视化导航，不制定研究规则。</p>
+      </div>
+    </section>
+
+    <main class="workflow-grid">
+      <aside class="phase-nav panel" aria-label="阶段导航">
+        <div class="panel-title">阶段导航</div>
+        <ol class="phase-nav-list" role="tablist" aria-orientation="vertical">
+          <li><button type="button" role="tab" data-stage-target="bootstrap"><span class="nav-number">1</span><span class="nav-label">启动对齐</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="planning"><span class="nav-number">2</span><span class="nav-label">研究规划</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="literature"><span class="nav-number">3</span><span class="nav-label">文献与候选</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="experiment"><span class="nav-number">4</span><span class="nav-label">实验迭代</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="reflection"><span class="nav-number">5</span><span class="nav-label">反思总结</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="termination"><span class="nav-number">6</span><span class="nav-label">终止判定</span></button></li>
+        </ol>
+        <div class="nav-legend">
+          <span class="legend-row"><i class="legend-mark prompt"></i> Prompt / 模板</span>
+          <span class="legend-row"><i class="legend-mark document"></i> 生成文档</span>
+          <span class="legend-row"><i class="legend-mark loop"></i> 迭代 / 回路</span>
+        </div>
+      </aside>
+
+      <section class="flow-column panel" id="workflow-map" aria-labelledby="workflow-heading">
+        <div class="flow-heading">
+          <div>
+            <h2 id="workflow-heading">分层生命周期工作流</h2>
+            <p>点击任一阶段，查看它读取什么、使用什么、生成什么，以及如何进入下一阶段。</p>
+          </div>
+          <div class="legend-inline" aria-label="成熟度图例">
+            <span class="status-pill ready">Operational</span>
+            <span class="status-pill skeleton">Skeleton</span>
+          </div>
+        </div>
+
+        <article class="phase phase-bootstrap" data-stage-card="bootstrap" tabindex="0" aria-label="阶段 1：启动对齐">
+          <header class="phase-header"><span class="phase-number">1</span><h3>启动对齐</h3></header>
+          <p class="phase-summary">AI 先检查代码；无可运行代码时自动安全引入 ReproFlow，再建立代码与数据事实档案并完成目标对齐。</p>
+          <div class="prompt-strip">
+            <a class="chip prompt" href="prompts/research_bootstrap.md">research_bootstrap.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip reference" href="references/governance_and_autonomy.md">governance_and_autonomy.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip reference" href="references/reproflow_code_contract.md">reproflow_code_contract.md</a><span class="status-pill ready">Operational</span>
+          </div>
+          <div class="node-row">
+            <div class="node">代码检查<br><small>已有代码 / ReproFlow Bootstrap</small></div><span class="node-arrow" aria-hidden="true"></span><div class="node">Codebase + Dataset Profiles</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Research Brief</div>
+          </div>
+          <div class="artifact-row">
+            <a class="chip document" href="templates/codebase_profile.md">CODEBASE_PROFILE.md 模板</a>
+            <a class="chip document" href="templates/dataset_profile.md">DATASET_PROFILE.md 模板</a>
+            <a class="chip document" href="templates/research_brief.md">RESEARCH_BRIEF.md 模板</a>
+          </div>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-planning" data-stage-card="planning" tabindex="0" aria-label="阶段 2：研究规划">
+          <header class="phase-header"><span class="phase-number">2</span><h3>研究规划</h3></header>
+          <p class="phase-summary">用户完成唯一一次最终确认后冻结目标；AI 建立 Benchmark、Anchor Baseline 状态与研究 Roadmap。</p>
+          <div class="prompt-strip">
+            <a class="chip reference" href="references/benchmark_and_model_roles.md">benchmark_and_model_roles.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip prompt" href="templates/benchmark_contract.md">benchmark_contract.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip prompt" href="templates/master_roadmap.md">master_roadmap.md</a><span class="status-pill ready">Operational</span>
+          </div>
+          <div class="node-row">
+            <div class="node">Research Brief<br><small>DRAFT → FROZEN</small></div><span class="node-arrow" aria-hidden="true"></span><div class="node">Benchmark</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Master Experiment Log</div>
+          </div>
+          <div class="artifact-row">
+            <span class="chip document">BENCHMARK.md</span>
+            <span class="chip document">EXPERIMENT_LOG.md</span>
+            <span class="chip reference">启动确认 + 特殊暂停硬门</span>
+          </div>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-literature" data-stage-card="literature" tabindex="0" aria-label="阶段 3：文献与候选">
+          <header class="phase-header"><span class="phase-number">3</span><h3>文献调研、论文复现与候选审查</h3></header>
+          <p class="phase-summary">恢复论文真正的机制，在目标数据集上进行全方法或组件级 R/A 复现，并生成受证据约束的 N candidate。</p>
+          <div class="prompt-strip">
+            <a class="chip prompt" href="prompts/paper_mechanism_review.md">paper_mechanism_review.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip prompt" href="prompts/candidate_adversarial_review.md">candidate_adversarial_review.md</a><span class="status-pill skeleton">Skeleton</span>
+            <a class="chip reference" href="references/paper_reproduction_and_innovation.md">论文复现模块</a><span class="status-pill ready">Operational</span>
+            <a class="chip reference" href="references/interaction_review_gate.md">interaction_review_gate.md</a><span class="status-pill ready">Operational</span>
+          </div>
+          <div class="node-row">
+            <div class="node">Literature Survey</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Paper Mechanism Cards</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Candidate Review</div>
+          </div>
+          <div class="artifact-row">
+            <a class="chip document" href="templates/literature_survey.md">literature_survey.md</a>
+            <a class="chip document" href="templates/paper_mechanism_card.md">paper_mechanism_card.md</a>
+            <a class="chip reference" href="references/candidate_priority_rules.md">Gold / Silver / Hold / Reject</a>
+          </div>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-experiment experiment-loop" data-stage-card="experiment" tabindex="0" aria-label="阶段 4：实验迭代">
+          <header class="phase-header"><span class="phase-number">4</span><h3>实验迭代</h3></header>
+          <p class="phase-summary">每个 Candidate 只验证一个主要假设，严格执行“假设 → 修改 → 运行 → 指标与机制判断 → 保留 / 回滚 / 修复”。</p>
+          <div class="prompt-strip">
+            <a class="chip reference" href="references/experiment_playbook.md">experiment_playbook.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip reference" href="references/reproflow_code_contract.md">reproflow_code_contract.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip reference" href="references/research_graph_protocol.md">research_graph_protocol.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip reference" href="references/runtime_api.md">runtime_api.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip prompt" href="templates/experiment_card.md">experiment_card.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip prompt" href="templates/run_event_log_schema.md">run_event_log_schema.md</a><span class="status-pill ready">Operational</span>
+          </div>
+          <div class="node-row">
+            <div class="node">LLM 科研判断<br><small>结构化 Proposal</small></div><span class="node-arrow" aria-hidden="true"></span><div class="node">Python Runtime<br><small>Validate → Apply / Reject</small></div><span class="node-arrow" aria-hidden="true"></span><div class="node">Graph + Card + Logs + HTML</div>
+          </div>
+          <div class="artifact-row">
+            <a class="chip document" href="templates/research_experiment_log.md">logs/research/volume_NNN.md</a>
+            <span class="chip document">logs/runs/EXXX/AYY.jsonl</span>
+          </div>
+          <span class="loop-caption">实验结果驱动继续、回滚、修复、重新调研或切换候选</span>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-reflection" data-stage-card="reflection" tabindex="0" aria-label="阶段 5：反思总结">
+          <header class="phase-header"><span class="phase-number">5</span><h3>阶段反思与路线裁决</h3></header>
+          <p class="phase-summary">冻结证据后，从第一性原理解释结果，进行独立对抗审查，并选择 DEEPEN、BROADEN、REPAIR、PIVOT 或 CONCLUDE。</p>
+          <div class="prompt-strip">
+            <a class="chip prompt" href="prompts/stage_reflection.md">stage_reflection.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip reference" href="references/research_records_protocol.md">research_records_protocol.md</a><span class="status-pill ready">Operational</span>
+            <a class="chip reference" href="references/interaction_review_gate.md">interaction_review_gate.md</a><span class="status-pill ready">Operational</span>
+          </div>
+          <div class="node-row">
+            <div class="node">Stage Evidence Pack</div><span class="node-arrow" aria-hidden="true"></span><div class="node">First-principles + Adversarial Review</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Stage Summary</div>
+          </div>
+          <div class="artifact-row">
+            <span class="chip document">logs/summaries/volume_NNN_summary.md</span>
+            <span class="chip reference">返回文献 / 候选 / 实验循环</span>
+          </div>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-termination" data-stage-card="termination" tabindex="0" aria-label="阶段 6：终止判定">
+          <header class="phase-header"><span class="phase-number">6</span><h3>终止判定</h3></header>
+          <p class="phase-summary">研究层面只有两个最终终止状态；三类预定义硬门可以临时进入 HUMAN_REVIEW_REQUIRED，但不结束研究。</p>
+          <div class="diamond-wrap"><div class="diamond"><span>目标达成？<br>预算耗尽？</span></div></div>
+          <div class="terminal-grid">
+            <div class="terminal-card"><span class="terminal-icon">✓</span><span>TARGET_REACHED<br><small>目标达成且硬约束通过</small></span></div>
+            <div class="terminal-card fail"><span class="terminal-icon">×</span><span>TARGET_NOT_REACHED<br><small>预算耗尽但目标未达成</small></span></div>
+          </div>
+          <div class="pause-banner"><span class="pause-icon">!</span><span><strong>HUMAN_REVIEW_REQUIRED</strong><small>临时暂停：数据或评测根本失效、Recovery Cycle 后仍无基础设施，或用户主动要求修改。</small></span></div>
+        </article>
+      </section>
+
+      <aside class="details-panel panel" aria-live="polite" aria-label="阶段详情">
+        <div class="panel-title">阶段详情</div>
+        <div class="detail-kicker"><strong>选择阶段查看</strong><span class="status-pill">AI 使用说明</span></div>
+
+        <article class="stage-detail" data-stage-detail="bootstrap">
+          <h3>1 · 启动对齐</h3>
+          <p>这是人工参与最多、也是唯一必须人工确认的阶段。AI 先查证，再提问。</p>
+          <section class="detail-block"><h4>输入</h4><ul><li>数据集文件与项目代码</li><li>用户完整需求与性能目标</li><li>研究预算与允许的执行边界</li></ul></section>
+          <section class="detail-block"><h4>执行顺序</h4><ol><li>检查可运行代码，无代码时安全引入 ReproFlow</li><li>生成并 validate Codebase Profile</li><li>读取数据并生成 Dataset Profile</li><li>自动填写可推断字段</li><li>围绕 PENDING 字段询问 3–5 个问题</li><li>生成 Research Brief 草案</li></ol></section>
+          <section class="detail-block"><h4>使用文件</h4><ul class="file-link-list"><li><a href="scripts/bootstrap_codebase.py"><span>bootstrap_codebase.py</span><span class="status-pill ready">Operational</span></a></li><li><a href="references/reproflow_code_contract.md"><span>reproflow_code_contract.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="prompts/research_bootstrap.md"><span>research_bootstrap.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/codebase_profile.md"><span>codebase_profile.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/dataset_profile.md"><span>dataset_profile.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/research_brief.md"><span>research_brief.md</span><span class="status-pill ready">Operational</span></a></li></ul></section>
+          <section class="detail-block"><h4>离开条件</h4><p>代码底座已建立或完成现有代码映射，Research Brief 字段完整并获得用户最终确认。确认后不再逐实验请求批准。</p></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="planning" hidden>
+          <h3>2 · 研究规划</h3>
+          <p>把冻结目标变成不可漂移的评测契约和可渐进披露的研究 Roadmap。</p>
+          <section class="detail-block"><h4>必须冻结</h4><ul><li>一个 Primary Metric 与 Performance Target</li><li>零到多个 Hard Constraints</li><li>数据划分、评估脚本与停止协议</li><li>至少一个带单位的预算：wall_clock_hours / gpu_hours / monetary_cost + currency / formal_experiment_count</li><li>Anchor Baseline 或 Baseline Pending 状态</li></ul></section>
+          <section class="detail-block"><h4>使用文件</h4><ul class="file-link-list"><li><a href="references/benchmark_and_model_roles.md"><span>benchmark_and_model_roles.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="references/research_records_protocol.md"><span>research_records_protocol.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/benchmark_contract.md"><span>benchmark_contract.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/master_roadmap.md"><span>master_roadmap.md</span><span class="status-pill ready">Operational</span></a></li></ul></section>
+          <section class="detail-block"><h4>输出</h4><p><code>BENCHMARK.md</code> 与项目根目录的 <code>EXPERIMENT_LOG.md</code>。</p></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="literature" hidden>
+          <h3>3 · 文献与候选</h3>
+          <p>不是只在开头调研一次，而是在复现、修复和后续组件创新中持续返回文献。</p>
+          <section class="detail-block"><h4>主要动作</h4><ul><li>默认选择、下载并核验 3–4 篇近邻论文；Brief 冻结后无需再次确认数量</li><li>恢复真正的算法机制</li><li>选择全方法或组件级 R/A 复现</li><li>必要时进行最多三个核心 Paper Repair 假设</li><li>对 N candidate 执行伪创新与结构风险审查</li></ul></section>
+          <section class="detail-block"><h4>使用文件</h4><ul class="file-link-list"><li><a href="references/paper_reproduction_and_innovation.md"><span>paper reproduction module</span><span class="status-pill ready">Operational</span></a></li><li><a href="references/candidate_priority_rules.md"><span>candidate_priority_rules.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="references/interaction_review_gate.md"><span>interaction_review_gate.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="prompts/paper_mechanism_review.md"><span>paper_mechanism_review.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="prompts/candidate_adversarial_review.md"><span>candidate_adversarial_review.md</span><span class="status-pill skeleton">Skeleton</span></a></li></ul></section>
+          <section class="detail-block"><h4>输出</h4><p>文献综述、逐篇 Paper Mechanism Card，以及通过硬门的 R/A/N 实验候选。</p></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="experiment" hidden>
+          <h3>4 · 实验迭代</h3>
+          <p>实验执行完全无人值守，但所有 Candidate 都必须可证伪、可比较并可追溯。</p>
+          <section class="detail-block"><h4>强制循环</h4><p><code>假设 → 预测与证伪条件 → 修改 → Smoke → Full Run → 判断 → 保留 / 回滚 / 修复</code></p></section>
+          <section class="detail-block"><h4>Runtime 边界</h4><p>LLM 负责机制、假设、解释和路线；Graph 判断动作只进入 handoff，落库动作映射到 <code>propose</code> 或 <code>start-run</code>。Experiment ID、Attempt 与 Card 仅由 <code>start-run</code> 创建；<code>inspect</code> 返回机器 <code>current_phase + last_trigger + active_run</code>，作为恢复唯一入口。成功响应使用 <code>accepted / revision / result</code>，拒绝响应使用 <code>error_code / violations / allowed_next_actions</code>。正式运行先登记 resolved config、metrics JSON、manifest、trainer log 与 Brief 派生的 cost unit，Runtime 从真实 artifact 读取指标后才更新科研状态。LLM 不直接编辑 canonical JSON、Runtime State 或派生 HTML。</p></section>
+          <section class="detail-block"><h4>分类与门控</h4><ul><li>五维 Experiment Classification</li><li>N candidate 的 Gold / Silver / Hold / Reject</li><li>Research Base 晋升：TWO_SEEDS / ONE_CONFIRM_SEED / SINGLE_RUN_JUSTIFIED</li><li>Branch Addition Gate</li><li>Simplification Campaign</li></ul></section>
+          <section class="detail-block"><h4>日志分层</h4><ul><li>Experiment Card：Runtime Record 由 Runtime 独占并校验 hash；Research Notes 只允许 LLM 追加</li><li>Research Experiment Log：精简研究叙事</li><li>Run Event Log：JSONL 机器事件流</li><li>trainer 输出：只作为被引用 artifact</li></ul></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="reflection" hidden>
+          <h3>5 · 反思总结</h3>
+          <p>Stage Summary 不是日志缩写，而是对冻结证据的第一性原理分析、对抗审查和下一路线裁决。</p>
+          <section class="detail-block"><h4>触发条件</h4><ul><li>累计十个正式实验</li><li>Research Base 正式晋升</li><li>Benchmark 正式变更</li><li>研究方向关闭或切换</li><li>Paper Repair Cycle 结束</li></ul></section>
+          <section class="detail-block"><h4>固定六问</h4><ol><li>我们到底知道了什么？</li><li>这些结果为什么发生？</li><li>我们可能错在哪里？</li><li>留下了什么可迁移认识？</li><li>下一阶段有哪些可判别方向？</li><li>研究路线现在应当怎么走？</li></ol></section>
+          <section class="detail-block"><h4>按需 Gate</h4><p>只有出现跨分支组合时读取 <a href="references/interaction_review_gate.md">Interaction Review Gate</a>；Stage Reflection 不重复定义规则。</p></section>
+          <section class="detail-block"><h4>路线</h4><p>DEEPEN / BROADEN / REPAIR / PIVOT / CONCLUDE，并保留一个带触发条件的备用路线。</p></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="termination" hidden>
+          <h3>6 · 终止与特殊暂停</h3>
+          <p>研究层面严格只有两个最终终止状态；HUMAN_REVIEW_REQUIRED 只是临时暂停。</p>
+          <section class="detail-block"><h4>TARGET_REACHED</h4><p>完整可比结果达到冻结的 Primary Metric 目标，并且全部 Hard Constraints 通过。</p></section>
+          <section class="detail-block"><h4>TARGET_NOT_REACHED</h4><p>wall_clock_hours、gpu_hours、带币种 monetary_cost、formal_experiment_count 中任一已登记硬预算先耗尽，目标仍未达到。</p></section>
+          <section class="detail-block"><h4>HUMAN_REVIEW_REQUIRED</h4><p>仅限数据或评测有效性根本失效、外部阻塞在一次 Recovery Cycle 后仍无法恢复，或用户主动要求暂停或修改冻结契约。纯人工等待不计入墙钟预算，但既有和持续产生的资源消耗仍计入。</p></section>
+          <section class="detail-block"><h4>两者都必须输出</h4><ul><li>最终总结与预算消耗</li><li>最佳合格模型与完整实验谱系</li><li>最终指标、目标差距与可复现 artifact</li></ul></section>
+        </article>
+      </aside>
+    </main>
+
+    <section class="file-atlas panel" aria-labelledby="atlas-title">
+      <div class="atlas-head">
+        <div><div class="panel-title">文件地图</div><h2 id="atlas-title">当前 Skill 的 Prompt、Template 与规范</h2></div>
+        <p>HTML 是可视化导航，不替代正式契约。若页面与 Research Contract 冲突，以用户最新裁决和 Research Contract 为准。</p>
+      </div>
+      <div class="atlas-grid">
+        <article class="atlas-card"><h3>入口与规范</h3><ul><li><a href="SKILL.md">SKILL.md</a> <span class="status-pill ready">Operational</span></li><li><a href="references/research_contract.md">Research Contract Registry</a> <span class="status-pill ready">Operational</span></li><li><a href="references/governance_and_autonomy.md">Governance & Autonomy</a> <span class="status-pill ready">Operational</span></li><li><a href="references/reproflow_code_contract.md">ReproFlow Codebase Contract</a> <span class="status-pill ready">Operational</span></li><li><a href="references/benchmark_and_model_roles.md">Benchmark & Model Roles</a> <span class="status-pill ready">Operational</span></li><li><a href="references/experiment_playbook.md">Experiment Playbook</a> <span class="status-pill ready">Operational</span></li><li><a href="references/research_records_protocol.md">Research Records</a> <span class="status-pill ready">Operational</span></li><li><a href="references/research_graph_protocol.md">Research Graph Judgment</a> <span class="status-pill ready">Operational</span></li><li><a href="references/interaction_review_gate.md">Interaction Review Gate</a> <span class="status-pill ready">Operational</span></li><li><a href="references/graph_structure_reference.md">Graph Structure (on demand)</a> <span class="status-pill ready">Operational</span></li><li><a href="references/runtime_api.md">Runtime API</a> <span class="status-pill ready">Operational</span></li><li><a href="../CONTEXT.md">Design Context</a></li></ul></article>
+        <article class="atlas-card"><h3>Prompts</h3><ul><li><a href="prompts/research_bootstrap.md">Research Bootstrap</a> <span class="status-pill ready">Operational</span></li><li><a href="prompts/research_graph_controller.md">Research Graph Controller</a> <span class="status-pill ready">Operational</span></li><li><a href="prompts/paper_mechanism_review.md">Paper Mechanism Review</a> <span class="status-pill ready">Operational</span></li><li><a href="prompts/candidate_adversarial_review.md">Candidate Review</a> <span class="status-pill skeleton">Skeleton</span></li><li><a href="prompts/stage_reflection.md">Stage Reflection</a> <span class="status-pill ready">Operational</span></li></ul></article>
+        <article class="atlas-card"><h3>Templates</h3><ul><li><a href="templates/codebase_profile.md">Codebase Profile</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/dataset_profile.md">Dataset Profile</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/research_brief.md">Research Brief</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/benchmark_contract.md">Benchmark Contract</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/master_roadmap.md">Master Roadmap</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/literature_survey.md">Literature Survey</a></li><li><a href="templates/paper_mechanism_card.md">Paper Mechanism Card</a></li><li><a href="templates/experiment_card.md">Experiment Card</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/research_experiment_log.md">Research Experiment Log</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/run_event_log_schema.md">Run Event Log Schema</a> <span class="status-pill ready">Operational</span></li></ul></article>
+        <article class="atlas-card"><h3>运行时、分类与论文资源</h3><ul><li><a href="examples/golden-run/README.md">Golden Run 示例</a> <span class="status-pill ready">Operational</span></li><li><a href="scripts/bootstrap_codebase.py">Codebase Bootstrap</a> <span class="status-pill ready">Operational</span></li><li><a href="scripts/autoresearch_runtime.py">Python Runtime</a> <span class="status-pill ready">Operational</span></li><li><a href="assets/schemas/experiment_graph.schema.json">Graph JSON Schema</a></li><li><a href="assets/schemas/runtime_state.schema.json">Runtime State Schema</a></li><li><a href="references/paper_reproduction_and_innovation.md">Paper Reproduction Module</a> <span class="status-pill ready">Operational</span></li><li><a href="references/candidate_priority_rules.md">Candidate Priority Rules</a> <span class="status-pill ready">Operational</span></li><li><a href="assets/candidate_priority_combinations.csv">162 组合表</a></li><li><a href="scripts/generate_candidate_priority_matrix.py">矩阵生成脚本</a></li></ul></article>
+      </div>
+      <div class="maintenance-note"><span class="bulb">💡</span><p><strong>持续同步规则：</strong>只要阶段、Prompt、Template、生成文档、决策门或文件成熟度发生变化，就必须同时更新中文与英文 HTML。页面用于理解和导航；Research Contract 负责把每条规则路由到唯一权威模块。</p></div>
+    </section>
+
+    <footer class="page-footer">
+      <span>AutoResearch Skill · 中文工作流</span>
+      <span>Research Brief FROZEN 后自主运行 · 仅三类特殊硬门允许临时人工审查</span>
+    </footer>
+  </div>
+  <noscript>此页面在无 JavaScript 时仍可阅读完整流程；启用 JavaScript 可使用阶段详情切换。</noscript>
+  <script src="assets/workflow.js"></script>
+</body>
+</html>

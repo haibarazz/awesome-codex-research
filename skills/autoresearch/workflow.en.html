@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Visual workflow for the AutoResearch Skill, from dataset and goal alignment through literature, experiments, reflection, and terminal outcomes.">
+  <title>AutoResearch Skill Workflow</title>
+  <link rel="stylesheet" href="assets/workflow.css">
+</head>
+<body>
+  <a class="skip-link" href="#workflow-map">Skip to workflow</a>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Project-local Skill · Living document</p>
+        <h1>AutoResearch Skill Workflow</h1>
+        <p class="hero-lede">Turn a dataset, performance target, and research budget into reproducible autonomous research. The user confirms once before launch; AI then operates independently, with temporary human review allowed only at three predefined hard gates.</p>
+      </div>
+      <div class="hero-actions">
+        <nav class="language-switch" aria-label="Language selection">
+          <a href="workflow.zh.html" data-language-link>中文</a>
+          <a href="workflow.en.html" aria-current="page" data-language-link>EN</a>
+        </nav>
+        <div class="version-stamp">Living Workflow · 2026-07-16</div>
+      </div>
+    </header>
+
+    <nav class="source-bar" aria-label="Core file shortcuts">
+      <a class="source-link" href="SKILL.md">◎ SKILL.md</a>
+      <a class="source-link" href="../CONTEXT.md">✎ CONTEXT.md</a>
+      <a class="source-link" href="references/research_contract.md">▣ Research Contract</a>
+      <a class="source-link" href="prompts/stage_reflection.md">↻ Stage Reflection</a>
+    </nav>
+
+    <section class="document-architecture panel" aria-labelledby="document-architecture-heading">
+      <div class="architecture-head">
+        <div>
+          <p class="architecture-kicker">Understand the document roles first</p>
+          <h2 id="document-architecture-heading">How the Skill turns research rules into real project documents</h2>
+        </div>
+        <p>The Skill routes the whole workflow, Prompts guide the current step, Rules constrain decisions, and Templates shape outputs. AI ultimately creates and maintains the real documents inside the research project.</p>
+      </div>
+
+      <div class="architecture-flow">
+        <article class="architecture-card architecture-skill">
+          <span class="architecture-label">Director · Router</span>
+          <h3><a href="SKILL.md">SKILL.md</a></h3>
+          <p>Identifies the current research phase and selects the Prompts, rules, and templates that must be read next.</p>
+        </article>
+
+        <span class="architecture-connector" aria-hidden="true"></span>
+
+        <div class="architecture-pair">
+          <article class="architecture-card architecture-prompt">
+            <span class="architecture-label">How to act</span>
+            <h3>Prompt</h3>
+            <p>Tells AI how to analyze, question, review, or reflect during the current phase.</p>
+            <a href="prompts/research_bootstrap.md">Example: Research Bootstrap</a>
+          </article>
+          <article class="architecture-card architecture-rules">
+            <span class="architecture-label">What cannot be violated</span>
+            <h3>Rules</h3>
+            <p>Contracts, Playbooks, and References preserve durable research constraints.</p>
+            <a href="references/research_contract.md">Example: Research Contract</a>
+          </article>
+        </div>
+
+        <span class="architecture-connector" aria-hidden="true"></span>
+
+        <article class="architecture-card architecture-template">
+          <span class="architecture-label">Output scaffold</span>
+          <h3>Template</h3>
+          <p>Defines what a project document should contain, but is not itself the record of this research run.</p>
+          <a href="templates/dataset_profile.md">Example: Dataset Profile template</a>
+        </article>
+
+        <span class="architecture-connector" aria-hidden="true"></span>
+
+        <article class="architecture-card architecture-output">
+          <span class="architecture-label">Real project state and evidence</span>
+          <h3>Generated Documents</h3>
+          <p><code>DATASET_PROFILE.md</code>, <code>RESEARCH_BRIEF.md</code>, <code>BENCHMARK.md</code>, experiment logs, and Stage Summaries.</p>
+        </article>
+      </div>
+
+      <div class="architecture-support" aria-label="Special explanatory files">
+        <p><strong>Progressive loading:</strong> <code>SKILL.md</code> and the single <code>ALWAYS</code> contract form the persistent context. Each cycle activates exactly one <code>PHASE</code>; templates, logs, and detailed field rules remain <code>ON_DEMAND</code>.</p>
+        <p><strong><a href="../CONTEXT.md">CONTEXT.md</a></strong>: records how this Skill is designed and adjudicated; it is not a research document generated during an experiment.</p>
+        <p><strong>Workflow HTML</strong>: helps people and AI understand file relationships and the lifecycle. It visualizes and routes; it does not create research rules.</p>
+      </div>
+    </section>
+
+    <main class="workflow-grid">
+      <aside class="phase-nav panel" aria-label="Phase navigation">
+        <div class="panel-title">Phase Navigation</div>
+        <ol class="phase-nav-list" role="tablist" aria-orientation="vertical">
+          <li><button type="button" role="tab" data-stage-target="bootstrap"><span class="nav-number">1</span><span class="nav-label">Input & Alignment</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="planning"><span class="nav-number">2</span><span class="nav-label">Research Planning</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="literature"><span class="nav-number">3</span><span class="nav-label">Literature & Candidates</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="experiment"><span class="nav-number">4</span><span class="nav-label">Experiment Loop</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="reflection"><span class="nav-number">5</span><span class="nav-label">Reflection</span></button></li>
+          <li><button type="button" role="tab" data-stage-target="termination"><span class="nav-number">6</span><span class="nav-label">Termination</span></button></li>
+        </ol>
+        <div class="nav-legend">
+          <span class="legend-row"><i class="legend-mark prompt"></i> Prompt / Template</span>
+          <span class="legend-row"><i class="legend-mark document"></i> Generated document</span>
+          <span class="legend-row"><i class="legend-mark loop"></i> Iteration / Loop</span>
+        </div>
+      </aside>
+
+      <section class="flow-column panel" id="workflow-map" aria-labelledby="workflow-heading">
+        <div class="flow-heading">
+          <div>
+            <h2 id="workflow-heading">Layered Lifecycle Workflow</h2>
+            <p>Select a phase to see what it reads, which resources it uses, what it produces, and how it advances.</p>
+          </div>
+          <div class="legend-inline" aria-label="Maturity legend"><span class="status-pill ready">Operational</span><span class="status-pill skeleton">Skeleton</span></div>
+        </div>
+
+        <article class="phase phase-bootstrap" data-stage-card="bootstrap" tabindex="0" aria-label="Phase 1: Input and alignment">
+          <header class="phase-header"><span class="phase-number">1</span><h3>Input & Alignment</h3></header>
+          <p class="phase-summary">AI inspects the codebase first and safely bootstraps ReproFlow only when runnable code is absent, then profiles the code, data, and research goal.</p>
+          <div class="prompt-strip"><a class="chip prompt" href="prompts/research_bootstrap.md">research_bootstrap.md</a><span class="status-pill ready">Operational</span><a class="chip reference" href="references/governance_and_autonomy.md">governance_and_autonomy.md</a><span class="status-pill ready">Operational</span><a class="chip reference" href="references/reproflow_code_contract.md">reproflow_code_contract.md</a><span class="status-pill ready">Operational</span></div>
+          <div class="node-row"><div class="node">Code Inspection<br><small>Existing Code / ReproFlow Bootstrap</small></div><span class="node-arrow" aria-hidden="true"></span><div class="node">Codebase + Dataset Profiles</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Research Brief</div></div>
+          <div class="artifact-row"><a class="chip document" href="templates/codebase_profile.md">CODEBASE_PROFILE.md template</a><a class="chip document" href="templates/dataset_profile.md">DATASET_PROFILE.md template</a><a class="chip document" href="templates/research_brief.md">RESEARCH_BRIEF.md template</a></div>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-planning" data-stage-card="planning" tabindex="0" aria-label="Phase 2: Research planning">
+          <header class="phase-header"><span class="phase-number">2</span><h3>Research Planning</h3></header>
+          <p class="phase-summary">After the user gives the one final confirmation, AI freezes the objective and builds the Benchmark, Anchor Baseline state, and research roadmap.</p>
+          <div class="prompt-strip"><a class="chip reference" href="references/benchmark_and_model_roles.md">benchmark_and_model_roles.md</a><span class="status-pill ready">Operational</span><a class="chip prompt" href="templates/benchmark_contract.md">benchmark_contract.md</a><span class="status-pill ready">Operational</span><a class="chip prompt" href="templates/master_roadmap.md">master_roadmap.md</a><span class="status-pill ready">Operational</span></div>
+          <div class="node-row"><div class="node">Research Brief<br><small>DRAFT → FROZEN</small></div><span class="node-arrow" aria-hidden="true"></span><div class="node">Benchmark</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Master Experiment Log</div></div>
+          <div class="artifact-row"><span class="chip document">BENCHMARK.md</span><span class="chip document">EXPERIMENT_LOG.md</span><span class="chip reference">Startup approval + narrow pause gates</span></div>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-literature" data-stage-card="literature" tabindex="0" aria-label="Phase 3: Literature and candidates">
+          <header class="phase-header"><span class="phase-number">3</span><h3>Literature, Reproduction & Candidate Review</h3></header>
+          <p class="phase-summary">Recover the real mechanism, reproduce full methods or components on the target dataset, and generate evidence-constrained N candidates.</p>
+          <div class="prompt-strip"><a class="chip prompt" href="prompts/paper_mechanism_review.md">paper_mechanism_review.md</a><span class="status-pill ready">Operational</span><a class="chip prompt" href="prompts/candidate_adversarial_review.md">candidate_adversarial_review.md</a><span class="status-pill skeleton">Skeleton</span><a class="chip reference" href="references/paper_reproduction_and_innovation.md">paper reproduction module</a><span class="status-pill ready">Operational</span><a class="chip reference" href="references/interaction_review_gate.md">interaction_review_gate.md</a><span class="status-pill ready">Operational</span></div>
+          <div class="node-row"><div class="node">Literature Survey</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Paper Mechanism Cards</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Candidate Review</div></div>
+          <div class="artifact-row"><a class="chip document" href="templates/literature_survey.md">literature_survey.md</a><a class="chip document" href="templates/paper_mechanism_card.md">paper_mechanism_card.md</a><a class="chip reference" href="references/candidate_priority_rules.md">Gold / Silver / Hold / Reject</a></div>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-experiment experiment-loop" data-stage-card="experiment" tabindex="0" aria-label="Phase 4: Experiment loop">
+          <header class="phase-header"><span class="phase-number">4</span><h3>Experiment Loop</h3></header>
+          <p class="phase-summary">Each Candidate tests one primary hypothesis through “hypothesis → change → run → metric and mechanism judgment → keep / rollback / repair.”</p>
+          <div class="prompt-strip"><a class="chip reference" href="references/experiment_playbook.md">experiment_playbook.md</a><span class="status-pill ready">Operational</span><a class="chip reference" href="references/reproflow_code_contract.md">reproflow_code_contract.md</a><span class="status-pill ready">Operational</span><a class="chip reference" href="references/research_graph_protocol.md">research_graph_protocol.md</a><span class="status-pill ready">Operational</span><a class="chip reference" href="references/runtime_api.md">runtime_api.md</a><span class="status-pill ready">Operational</span><a class="chip prompt" href="templates/experiment_card.md">experiment_card.md</a><span class="status-pill ready">Operational</span><a class="chip prompt" href="templates/run_event_log_schema.md">run_event_log_schema.md</a><span class="status-pill ready">Operational</span></div>
+          <div class="node-row"><div class="node">LLM Research Judgment<br><small>Structured Proposal</small></div><span class="node-arrow" aria-hidden="true"></span><div class="node">Python Runtime<br><small>Validate → Apply / Reject</small></div><span class="node-arrow" aria-hidden="true"></span><div class="node">Graph + Card + Logs + HTML</div></div>
+          <div class="artifact-row"><a class="chip document" href="templates/research_experiment_log.md">logs/research/volume_NNN.md</a><span class="chip document">logs/runs/EXXX/AYY.jsonl</span></div>
+          <span class="loop-caption">Evidence routes the system to continue, rollback, repair, revisit literature, or select another candidate</span>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-reflection" data-stage-card="reflection" tabindex="0" aria-label="Phase 5: Reflection">
+          <header class="phase-header"><span class="phase-number">5</span><h3>Stage Reflection & Route Decision</h3></header>
+          <p class="phase-summary">Freeze the evidence, explain results from first principles, conduct independent adversarial review, and choose DEEPEN, BROADEN, REPAIR, PIVOT, or CONCLUDE.</p>
+          <div class="prompt-strip"><a class="chip prompt" href="prompts/stage_reflection.md">stage_reflection.md</a><span class="status-pill ready">Operational</span><a class="chip reference" href="references/research_records_protocol.md">research_records_protocol.md</a><span class="status-pill ready">Operational</span><a class="chip reference" href="references/interaction_review_gate.md">interaction_review_gate.md</a><span class="status-pill ready">Operational</span></div>
+          <div class="node-row"><div class="node">Stage Evidence Pack</div><span class="node-arrow" aria-hidden="true"></span><div class="node">First-principles + Adversarial Review</div><span class="node-arrow" aria-hidden="true"></span><div class="node">Stage Summary</div></div>
+          <div class="artifact-row"><span class="chip document">logs/summaries/volume_NNN_summary.md</span><span class="chip reference">Return to literature / candidates / experiments</span></div>
+        </article>
+
+        <div class="flow-connector" aria-hidden="true"></div>
+
+        <article class="phase phase-termination" data-stage-card="termination" tabindex="0" aria-label="Phase 6: Termination">
+          <header class="phase-header"><span class="phase-number">6</span><h3>Termination</h3></header>
+          <p class="phase-summary">Only two final research outcomes are allowed. Three predefined hard gates may enter HUMAN_REVIEW_REQUIRED temporarily without ending the research.</p>
+          <div class="diamond-wrap"><div class="diamond"><span>Target reached?<br>Budget exhausted?</span></div></div>
+          <div class="terminal-grid"><div class="terminal-card"><span class="terminal-icon">✓</span><span>TARGET_REACHED<br><small>Target and hard constraints pass</small></span></div><div class="terminal-card fail"><span class="terminal-icon">×</span><span>TARGET_NOT_REACHED<br><small>Budget exhausted before target</small></span></div></div>
+          <div class="pause-banner"><span class="pause-icon">!</span><span><strong>HUMAN_REVIEW_REQUIRED</strong><small>Temporary pause: fundamental data or evaluation invalidity, unavailable infrastructure after a Recovery Cycle, or an explicit user change.</small></span></div>
+        </article>
+      </section>
+
+      <aside class="details-panel panel" aria-live="polite" aria-label="Phase details">
+        <div class="panel-title">Stage Details</div>
+        <div class="detail-kicker"><strong>Select a phase</strong><span class="status-pill">AI usage guide</span></div>
+
+        <article class="stage-detail" data-stage-detail="bootstrap">
+          <h3>1 · Input & Alignment</h3><p>This is the phase with the most human involvement and the only mandatory human approval. AI verifies before it asks.</p>
+          <section class="detail-block"><h4>Inputs</h4><ul><li>Dataset files and project code</li><li>User's complete requirement and performance goal</li><li>Research budget and authorized execution boundary</li></ul></section>
+          <section class="detail-block"><h4>Sequence</h4><ol><li>Inspect runnable code and safely bootstrap ReproFlow only when absent</li><li>Generate and validate Codebase Profile</li><li>Read the data and generate Dataset Profile</li><li>Autofill inferable fields</li><li>Ask 3–5 questions about PENDING fields</li><li>Generate the Research Brief draft</li></ol></section>
+          <section class="detail-block"><h4>Resources</h4><ul class="file-link-list"><li><a href="scripts/bootstrap_codebase.py"><span>bootstrap_codebase.py</span><span class="status-pill ready">Operational</span></a></li><li><a href="references/reproflow_code_contract.md"><span>reproflow_code_contract.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="prompts/research_bootstrap.md"><span>research_bootstrap.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/codebase_profile.md"><span>codebase_profile.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/dataset_profile.md"><span>dataset_profile.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/research_brief.md"><span>research_brief.md</span><span class="status-pill ready">Operational</span></a></li></ul></section>
+          <section class="detail-block"><h4>Exit gate</h4><p>The codebase is validated or mapped, every required Research Brief field is complete, and the user gives the final confirmation. No per-experiment approval follows.</p></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="planning" hidden>
+          <h3>2 · Research Planning</h3><p>Turn the frozen objective into a non-drifting evaluation contract and a progressively disclosed research roadmap.</p>
+          <section class="detail-block"><h4>Must freeze</h4><ul><li>One Primary Metric and Performance Target</li><li>Zero or more Hard Constraints</li><li>Data split, evaluation script, and stopping protocol</li><li>At least one unit-explicit cap: wall_clock_hours / gpu_hours / monetary_cost + currency / formal_experiment_count</li><li>Anchor Baseline or Baseline Pending status</li></ul></section>
+          <section class="detail-block"><h4>Resources</h4><ul class="file-link-list"><li><a href="references/benchmark_and_model_roles.md"><span>benchmark_and_model_roles.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="references/research_records_protocol.md"><span>research_records_protocol.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/benchmark_contract.md"><span>benchmark_contract.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="templates/master_roadmap.md"><span>master_roadmap.md</span><span class="status-pill ready">Operational</span></a></li></ul></section>
+          <section class="detail-block"><h4>Outputs</h4><p><code>BENCHMARK.md</code> and root-level <code>EXPERIMENT_LOG.md</code>.</p></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="literature" hidden>
+          <h3>3 · Literature & Candidates</h3><p>Literature search is not a one-time opening step. Re-enter it during reproduction, repair, and later component innovation.</p>
+          <section class="detail-block"><h4>Actions</h4><ul><li>Select, download, and verify 3–4 nearest papers by default; quantity needs no further confirmation after Brief freeze</li><li>Recover the actual algorithmic mechanism</li><li>Choose full-method or component-level R/A reproduction</li><li>Run at most three evidence-backed Paper Repair hypotheses when needed</li><li>Prosecute N candidates for pseudo-innovation and structural risk</li></ul></section>
+          <section class="detail-block"><h4>Resources</h4><ul class="file-link-list"><li><a href="references/paper_reproduction_and_innovation.md"><span>paper reproduction module</span><span class="status-pill ready">Operational</span></a></li><li><a href="references/candidate_priority_rules.md"><span>candidate_priority_rules.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="references/interaction_review_gate.md"><span>interaction_review_gate.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="prompts/paper_mechanism_review.md"><span>paper_mechanism_review.md</span><span class="status-pill ready">Operational</span></a></li><li><a href="prompts/candidate_adversarial_review.md"><span>candidate_adversarial_review.md</span><span class="status-pill skeleton">Skeleton</span></a></li></ul></section>
+          <section class="detail-block"><h4>Outputs</h4><p>Literature survey, one Paper Mechanism Card per paper, and R/A/N experiment candidates that pass the gates.</p></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="experiment" hidden>
+          <h3>4 · Experiment Loop</h3><p>Execution is fully unattended, but every Candidate remains falsifiable, comparable, and traceable.</p>
+          <section class="detail-block"><h4>Mandatory loop</h4><p><code>Hypothesis → prediction and falsifier → change → smoke → full run → judgment → keep / rollback / repair</code></p></section>
+          <section class="detail-block"><h4>Runtime boundary</h4><p>The LLM owns mechanisms, hypotheses, interpretation, and routing. Judgment-only Graph Operations stay in the handoff; persistent operations map to <code>propose</code> or <code>start-run</code>. Only <code>start-run</code> creates the Experiment ID, Attempt, and Card. <code>inspect</code> returns machine-owned <code>current_phase + last_trigger + active_run</code> as the sole recovery entry. Success uses <code>accepted / revision / result</code>; rejection uses <code>error_code / violations / allowed_next_actions</code>. Formal runs preregister resolved config, metrics JSON, manifest, trainer-log paths, and the Brief-derived cost unit; Runtime reads real artifacts before changing scientific state. The LLM never edits canonical JSON, Runtime State, or derived HTML directly.</p></section>
+          <section class="detail-block"><h4>Classification & gates</h4><ul><li>Five-dimensional Experiment Classification</li><li>Gold / Silver / Hold / Reject for N candidates</li><li>Research Base promotion: TWO_SEEDS / ONE_CONFIRM_SEED / SINGLE_RUN_JUSTIFIED</li><li>Branch Addition Gate</li><li>Simplification Campaign</li></ul></section>
+          <section class="detail-block"><h4>Logging layers</h4><ul><li>Experiment Card: Runtime owns and hashes Runtime Record; the LLM may only append Research Notes</li><li>Research Experiment Log: concise research narrative</li><li>Run Event Log: JSONL machine event stream</li><li>Trainer output: referenced artifact only</li></ul></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="reflection" hidden>
+          <h3>5 · Stage Reflection</h3><p>A Stage Summary is not a compressed log. It is first-principles analysis, adversarial review, and route selection over frozen evidence.</p>
+          <section class="detail-block"><h4>Triggers</h4><ul><li>Ten completed formal experiments</li><li>Research Base promotion</li><li>Formal Benchmark change</li><li>Research direction closed or switched</li><li>Paper Repair Cycle completed</li></ul></section>
+          <section class="detail-block"><h4>Six fixed questions</h4><ol><li>What do we actually know?</li><li>Why did these results happen?</li><li>Where might we be wrong?</li><li>What transferable lessons remain?</li><li>Which next directions are discriminating?</li><li>Which route should research take now?</li></ol></section>
+          <section class="detail-block"><h4>On-demand gate</h4><p>Read the <a href="references/interaction_review_gate.md">Interaction Review Gate</a> only for a cross-branch combination; Stage Reflection does not duplicate its rules.</p></section>
+          <section class="detail-block"><h4>Routes</h4><p>DEEPEN / BROADEN / REPAIR / PIVOT / CONCLUDE, plus one contingency route with an explicit trigger.</p></section>
+        </article>
+
+        <article class="stage-detail" data-stage-detail="termination" hidden>
+          <h3>6 · Termination & Exceptional Pause</h3><p>Exactly two final research outcomes are permitted; HUMAN_REVIEW_REQUIRED is temporary.</p>
+          <section class="detail-block"><h4>TARGET_REACHED</h4><p>A Full Comparable Run meets the frozen Primary Metric target and every Hard Constraint passes.</p></section>
+          <section class="detail-block"><h4>TARGET_NOT_REACHED</h4><p>Any registered hard cap among wall_clock_hours, gpu_hours, currency-tagged monetary_cost, and formal_experiment_count is exhausted before the target is reached.</p></section>
+          <section class="detail-block"><h4>HUMAN_REVIEW_REQUIRED</h4><p>Allowed only for fundamental data or evaluation invalidity, an external blocker that remains after one Recovery Cycle, or an explicit user request to pause or change a frozen contract. Pure waiting time is excluded from the wall-clock budget, while actual resource use still counts.</p></section>
+          <section class="detail-block"><h4>Both outcomes must preserve</h4><ul><li>Final summary and budget usage</li><li>Best qualified model and full experiment lineage</li><li>Final metrics, remaining target gap, and reproducible artifacts</li></ul></section>
+        </article>
+      </aside>
+    </main>
+
+    <section class="file-atlas panel" aria-labelledby="atlas-title">
+      <div class="atlas-head"><div><div class="panel-title">File Atlas</div><h2 id="atlas-title">Current prompts, templates, and contracts</h2></div><p>This HTML is a visual index, not an authority replacement. If it conflicts with the Research Contract, follow the user's latest ruling and the Research Contract.</p></div>
+      <div class="atlas-grid">
+        <article class="atlas-card"><h3>Entrypoints & Contracts</h3><ul><li><a href="SKILL.md">SKILL.md</a> <span class="status-pill ready">Operational</span></li><li><a href="references/research_contract.md">Research Contract Registry</a> <span class="status-pill ready">Operational</span></li><li><a href="references/governance_and_autonomy.md">Governance & Autonomy</a> <span class="status-pill ready">Operational</span></li><li><a href="references/reproflow_code_contract.md">ReproFlow Codebase Contract</a> <span class="status-pill ready">Operational</span></li><li><a href="references/benchmark_and_model_roles.md">Benchmark & Model Roles</a> <span class="status-pill ready">Operational</span></li><li><a href="references/experiment_playbook.md">Experiment Playbook</a> <span class="status-pill ready">Operational</span></li><li><a href="references/research_records_protocol.md">Research Records</a> <span class="status-pill ready">Operational</span></li><li><a href="references/research_graph_protocol.md">Research Graph Judgment</a> <span class="status-pill ready">Operational</span></li><li><a href="references/interaction_review_gate.md">Interaction Review Gate</a> <span class="status-pill ready">Operational</span></li><li><a href="references/graph_structure_reference.md">Graph Structure (on demand)</a> <span class="status-pill ready">Operational</span></li><li><a href="references/runtime_api.md">Runtime API</a> <span class="status-pill ready">Operational</span></li><li><a href="../CONTEXT.md">Design Context</a></li></ul></article>
+        <article class="atlas-card"><h3>Prompts</h3><ul><li><a href="prompts/research_bootstrap.md">Research Bootstrap</a> <span class="status-pill ready">Operational</span></li><li><a href="prompts/research_graph_controller.md">Research Graph Controller</a> <span class="status-pill ready">Operational</span></li><li><a href="prompts/paper_mechanism_review.md">Paper Mechanism Review</a> <span class="status-pill ready">Operational</span></li><li><a href="prompts/candidate_adversarial_review.md">Candidate Review</a> <span class="status-pill skeleton">Skeleton</span></li><li><a href="prompts/stage_reflection.md">Stage Reflection</a> <span class="status-pill ready">Operational</span></li></ul></article>
+        <article class="atlas-card"><h3>Templates</h3><ul><li><a href="templates/codebase_profile.md">Codebase Profile</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/dataset_profile.md">Dataset Profile</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/research_brief.md">Research Brief</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/benchmark_contract.md">Benchmark Contract</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/master_roadmap.md">Master Roadmap</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/literature_survey.md">Literature Survey</a></li><li><a href="templates/paper_mechanism_card.md">Paper Mechanism Card</a></li><li><a href="templates/experiment_card.md">Experiment Card</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/research_experiment_log.md">Research Experiment Log</a> <span class="status-pill ready">Operational</span></li><li><a href="templates/run_event_log_schema.md">Run Event Log Schema</a> <span class="status-pill ready">Operational</span></li></ul></article>
+        <article class="atlas-card"><h3>Runtime, Classification & Paper Resources</h3><ul><li><a href="examples/golden-run/README.md">Golden Run Example</a> <span class="status-pill ready">Operational</span></li><li><a href="scripts/bootstrap_codebase.py">Codebase Bootstrap</a> <span class="status-pill ready">Operational</span></li><li><a href="scripts/autoresearch_runtime.py">Python Runtime</a> <span class="status-pill ready">Operational</span></li><li><a href="assets/schemas/experiment_graph.schema.json">Graph JSON Schema</a></li><li><a href="assets/schemas/runtime_state.schema.json">Runtime State Schema</a></li><li><a href="references/paper_reproduction_and_innovation.md">Paper Reproduction Module</a> <span class="status-pill ready">Operational</span></li><li><a href="references/candidate_priority_rules.md">Candidate Priority Rules</a> <span class="status-pill ready">Operational</span></li><li><a href="assets/candidate_priority_combinations.csv">162-combination table</a></li><li><a href="scripts/generate_candidate_priority_matrix.py">Matrix generator</a></li></ul></article>
+      </div>
+      <div class="maintenance-note"><span class="bulb">💡</span><p><strong>Living synchronization rule:</strong> whenever a phase, prompt, template, generated document, gate, or maturity status changes, update both Chinese and English HTML pages. The pages explain and navigate; the Research Contract routes to the one authoritative module for each rule.</p></div>
+    </section>
+
+    <footer class="page-footer"><span>AutoResearch Skill · English workflow</span><span>Autonomous after Research Brief FROZEN · temporary review only at three narrow hard gates</span></footer>
+  </div>
+  <noscript>The complete workflow remains readable without JavaScript. Enable JavaScript to switch the stage detail panel.</noscript>
+  <script src="assets/workflow.js"></script>
+</body>
+</html>

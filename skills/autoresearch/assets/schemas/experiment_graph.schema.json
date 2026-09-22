@@ -1,0 +1,421 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autoresearch.local/schemas/experiment_graph.schema.json",
+  "title": "AutoResearch Experiment Graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "revision",
+    "created_at",
+    "updated_at",
+    "benchmarks",
+    "active_benchmark_id",
+    "role_states",
+    "role_events",
+    "active_frontier",
+    "stage_summaries",
+    "nodes",
+    "edges"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "project_id": {"type": "string", "minLength": 1},
+    "revision": {"type": "integer", "minimum": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "benchmarks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/benchmark"}
+    },
+    "active_benchmark_id": {"type": "string", "minLength": 1},
+    "role_states": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/roleState"}
+    },
+    "role_events": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/roleEvent"}
+    },
+    "active_frontier": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {"pattern": "^RN-[0-9]{4}$"}
+    },
+    "stage_summaries": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/stageSummary"}
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"$ref": "#/$defs/researchNode"},
+          {"$ref": "#/$defs/literatureNode"}
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/edge"}
+    }
+  },
+  "$defs": {
+    "nullableString": {"type": ["string", "null"]},
+    "metricDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric_id", "label", "role", "direction", "unit", "precision"],
+      "properties": {
+        "metric_id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1},
+        "role": {"enum": ["PRIMARY", "SECONDARY"]},
+        "direction": {"enum": ["MAXIMIZE", "MINIMIZE"]},
+        "unit": {"type": "string", "minLength": 1},
+        "precision": {"type": "integer", "minimum": 0, "maximum": 12}
+      }
+    },
+    "benchmark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["benchmark_id", "benchmark_ref", "display_metrics"],
+      "properties": {
+        "benchmark_id": {"type": "string", "minLength": 1},
+        "benchmark_ref": {"type": "string", "minLength": 1},
+        "display_metrics": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {"$ref": "#/$defs/metricDefinition"}
+        }
+      }
+    },
+    "roleState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "anchor_baseline_id",
+        "research_base_id",
+        "champion_id",
+        "reference_baseline_ids",
+        "simplification_anchor_id"
+      ],
+      "properties": {
+        "anchor_baseline_id": {"pattern": "^RN-[0-9]{4}$"},
+        "research_base_id": {"pattern": "^RN-[0-9]{4}$"},
+        "champion_id": {"pattern": "^RN-[0-9]{4}$"},
+        "reference_baseline_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"pattern": "^RN-[0-9]{4}$"}
+        },
+        "simplification_anchor_id": {"pattern": "^RN-[0-9]{4}$"}
+      }
+    },
+    "roleEvent": {
+      "type": "object",
+      "required": [
+        "benchmark_id",
+        "created_at",
+        "event_type",
+        "role",
+        "node_id",
+        "reason",
+        "evidence_ref"
+      ],
+      "properties": {
+        "benchmark_id": {"type": "string", "minLength": 1},
+        "created_at": {"type": "string", "format": "date-time"},
+        "event_type": {"enum": ["ASSIGNED", "REPLACED", "REVOKED"]},
+        "role": {
+          "enum": [
+            "ANCHOR_BASELINE",
+            "RESEARCH_BASE",
+            "CHAMPION",
+            "REFERENCE_BASELINE"
+          ]
+        },
+        "node_id": {"pattern": "^RN-[0-9]{4}$"},
+        "previous_node_id": {
+          "type": ["string", "null"],
+          "pattern": "^RN-[0-9]{4}$"
+        },
+        "reason": {"type": "string", "minLength": 1},
+        "evidence_ref": {"type": ["string", "null"]},
+        "single_seed_provisional": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_class",
+        "change_scope",
+        "research_layer",
+        "intervention_locus",
+        "change_operator"
+      ],
+      "properties": {
+        "evidence_class": {"enum": ["R", "A", "N"]},
+        "change_scope": {"enum": ["FULL_METHOD", "COMPONENT", "PROTOCOL"]},
+        "research_layer": {"enum": ["L1", "L2", "L3", "L4"]},
+        "intervention_locus": {
+          "enum": [
+            "SYSTEM",
+            "DATA",
+            "FEATURE",
+            "BACKBONE",
+            "COMPONENT",
+            "BRANCH",
+            "LOSS",
+            "OPTIMIZATION",
+            "INFERENCE"
+          ]
+        },
+        "change_operator": {
+          "enum": ["ADD", "REPLACE", "DELETE", "REWIRE", "MERGE", "SPLIT"]
+        }
+      }
+    },
+    "metricSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "label",
+        "value",
+        "delta_vs_research_base",
+        "delta_vs_champion"
+      ],
+      "properties": {
+        "metric_id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1},
+        "value": {"type": ["number", "null"]},
+        "delta_vs_research_base": {"type": ["number", "null"]},
+        "delta_vs_champion": {"type": ["number", "null"]}
+      }
+    },
+    "refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "experiment_card",
+        "research_log",
+        "run_directory",
+        "paper_mechanism_cards",
+        "interaction_review_pack"
+      ],
+      "properties": {
+        "experiment_card": {"$ref": "#/$defs/nullableString"},
+        "research_log": {"$ref": "#/$defs/nullableString"},
+        "run_directory": {"$ref": "#/$defs/nullableString"},
+        "paper_mechanism_cards": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "interaction_review_pack": {"$ref": "#/$defs/nullableString"}
+      }
+    },
+    "researchNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "node_type",
+        "created_at",
+        "title",
+        "benchmark_id",
+        "research_base_id",
+        "comparison_target_id",
+        "experiment_id",
+        "hypothesis",
+        "mechanism",
+        "single_main_change",
+        "falsification_condition",
+        "branch_status",
+        "branch_reason",
+        "release_condition",
+        "run_outcome",
+        "hypothesis_verdict",
+        "candidate_priority",
+        "priority_reason",
+        "classification",
+        "metric_summary",
+        "refs"
+      ],
+      "properties": {
+        "node_id": {"pattern": "^RN-[0-9]{4}$"},
+        "node_type": {"const": "RESEARCH"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "title": {"type": "string", "minLength": 1},
+        "benchmark_id": {"type": "string", "minLength": 1},
+        "research_base_id": {"pattern": "^RN-[0-9]{4}$"},
+        "comparison_target_id": {"pattern": "^RN-[0-9]{4}$"},
+        "experiment_id": {
+          "type": ["string", "null"],
+          "pattern": "^E[0-9]{3}$"
+        },
+        "hypothesis": {"$ref": "#/$defs/nullableString"},
+        "mechanism": {"$ref": "#/$defs/nullableString"},
+        "single_main_change": {"$ref": "#/$defs/nullableString"},
+        "falsification_condition": {"$ref": "#/$defs/nullableString"},
+        "branch_status": {"enum": ["OPEN", "HOLD", "CLOSED"]},
+        "branch_reason": {"$ref": "#/$defs/nullableString"},
+        "release_condition": {"$ref": "#/$defs/nullableString"},
+        "run_outcome": {
+          "enum": [
+            "NOT_RUN",
+            "COMPLETED",
+            "NORMAL_EARLY_STOP",
+            "STOP_LOSS",
+            "TECHNICAL_FAILURE"
+          ]
+        },
+        "hypothesis_verdict": {
+          "enum": [
+            "UNTESTED",
+            "SUPPORTED",
+            "NOT_SUPPORTED",
+            "INCONCLUSIVE",
+            "NOT_EVALUABLE"
+          ]
+        },
+        "candidate_priority": {
+          "type": ["string", "null"],
+          "enum": ["GOLD", "SILVER", "HOLD", null]
+        },
+        "priority_reason": {"$ref": "#/$defs/nullableString"},
+        "classification": {
+          "oneOf": [
+            {"$ref": "#/$defs/classification"},
+            {"type": "null"}
+          ]
+        },
+        "metric_summary": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {"$ref": "#/$defs/metricSummary"}
+        },
+        "refs": {"$ref": "#/$defs/refs"}
+      }
+    },
+    "literatureNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "node_type",
+        "created_at",
+        "title",
+        "trigger",
+        "research_question",
+        "search_scope",
+        "search_outcome",
+        "outcome_reason",
+        "direction_summary",
+        "selected_papers",
+        "literature_survey_ref"
+      ],
+      "properties": {
+        "node_id": {"pattern": "^LN-[0-9]{4}$"},
+        "node_type": {"const": "LITERATURE"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "title": {"type": "string", "minLength": 1},
+        "trigger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "source_node_ids", "source_ref", "reason"],
+          "properties": {
+            "type": {
+              "enum": [
+                "BOOTSTRAP",
+                "BOTTLENECK",
+                "BRANCH_CLOSED",
+                "FRONTIER_EMPTY",
+                "BASE_PROMOTION",
+                "STAGE_PIVOT",
+                "INTERACTION_REVIEW",
+                "NO_DIRECTION_RECOVERY"
+              ]
+            },
+            "source_node_ids": {
+              "type": "array",
+              "items": {"pattern": "^(RN|LN)-[0-9]{4}$"}
+            },
+            "source_ref": {"$ref": "#/$defs/nullableString"},
+            "reason": {"type": "string", "minLength": 1}
+          }
+        },
+        "research_question": {"type": "string", "minLength": 1},
+        "search_scope": {"type": "string", "minLength": 1},
+        "search_outcome": {"enum": ["DIRECTIONS_FOUND", "NO_DIRECTION"]},
+        "outcome_reason": {"type": "string", "minLength": 1},
+        "direction_summary": {"$ref": "#/$defs/nullableString"},
+        "selected_papers": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title", "pdf_ref", "mechanism_card_ref"],
+            "properties": {
+              "title": {"type": "string", "minLength": 1},
+              "pdf_ref": {"type": "string", "minLength": 1},
+              "mechanism_card_ref": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "literature_survey_ref": {"type": "string", "minLength": 1}
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from_node_id",
+        "to_node_id",
+        "edge_type",
+        "reason",
+        "evidence_ref"
+      ],
+      "properties": {
+        "from_node_id": {"pattern": "^(RN|LN)-[0-9]{4}$"},
+        "to_node_id": {"pattern": "^(RN|LN)-[0-9]{4}$"},
+        "edge_type": {"enum": ["PRIMARY_PARENT", "DIRECTION", "SOURCE", "MERGE"]},
+        "reason": {"$ref": "#/$defs/nullableString"},
+        "evidence_ref": {"$ref": "#/$defs/nullableString"}
+      }
+    },
+    "stageSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary_id",
+        "created_at",
+        "trigger",
+        "covered_node_ids",
+        "route_decision",
+        "summary_ref"
+      ],
+      "properties": {
+        "summary_id": {"pattern": "^SS-[0-9]{3}$"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "trigger": {"type": "string", "minLength": 1},
+        "covered_node_ids": {
+          "type": "array",
+          "items": {"pattern": "^(RN|LN)-[0-9]{4}$"}
+        },
+        "route_decision": {
+          "enum": ["DEEPEN", "BROADEN", "REPAIR", "PIVOT", "CONCLUDE"]
+        },
+        "summary_ref": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

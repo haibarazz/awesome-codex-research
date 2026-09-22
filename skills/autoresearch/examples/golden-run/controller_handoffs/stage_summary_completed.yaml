@@ -1,0 +1,30 @@
+controller_handoff:
+  trigger: STAGE_SUMMARY_COMPLETED
+  current_phase: RESULT_ROUTING
+  controller_status: CONTINUE
+  evidence_summary: The PIVOT route leaves weighting fixed and tests a loss-only explanation.
+  graph_operations:
+    - operation: BACKTRACK
+      target: RN-0002
+      reason: Return to the promoted base before opening a distinct direction.
+    - operation: GENERATE
+      target: null
+      reason: Generate one loss-only Candidate Draft from the unresolved mechanism.
+  artifacts_written:
+    - logs/summaries/volume_001_summary.md
+  candidate_drafts:
+    - candidate_id: CD-001
+      origin: first_principles
+      uncertainty_reduced: Weighting mechanism versus general calibration.
+      primary_hypothesis: Replacing only calibration loss improves AUC.
+      competing_explanation: The gain is specific to frequency-aware weighting.
+      single_main_change: Replace only calibration loss.
+      predicted_outcome_and_mediator: AUC rises while calibration error falls.
+      falsification_condition: AUC does not rise or calibration error moves oppositely.
+      minimal_discriminating_experiment: One full loss-only run from RN-0002.
+      cost_class: one_full_run
+      dependencies: Frozen Benchmark and RN-0002.
+      interaction_candidate: false
+  next_phase: CANDIDATE_DESIGN
+  next_action: Review CD-001 against the current Research Base, then submit one CREATE_CANDIDATE proposal.
+  next_target: CD-001

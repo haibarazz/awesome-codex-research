@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoResearch"
+  short_description: "Autonomous ML research with safe codebase bootstrap and reproducible experiment control"
+  default_prompt: "Use $autoresearch to inspect or bootstrap the codebase, align the research contract, and run the authorized ML research loop."

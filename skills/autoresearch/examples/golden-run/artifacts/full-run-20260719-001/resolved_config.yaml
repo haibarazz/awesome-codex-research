@@ -1,0 +1,4 @@
+dataset: golden-dataset-v1
+model: small_mlp
+seed: 7
+weighting: frequency_aware

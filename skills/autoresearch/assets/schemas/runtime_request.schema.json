@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autoresearch.local/schemas/runtime_request.schema.json",
+  "title": "AutoResearch Runtime Mutation Request",
+  "description": "Shared envelope. Command-specific fields are documented by runtime_api.md and validated by Python.",
+  "type": "object",
+  "required": ["request_id"],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$"
+    },
+    "action": {
+      "enum": [
+        "CREATE_LITERATURE",
+        "CREATE_CANDIDATE",
+        "CREATE_REPAIR",
+        "CREATE_MERGE",
+        "SET_FRONTIER",
+        "HOLD_NODE",
+        "REOPEN_NODE",
+        "CLOSE_NODE",
+        "PROMOTE_RESEARCH_BASE",
+        "ASSIGN_REFERENCE_BASELINE",
+        "REGISTER_STAGE_SUMMARY",
+        "REGISTER_BASELINE_SEED_EVIDENCE",
+        "FINALIZE_RESEARCH"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

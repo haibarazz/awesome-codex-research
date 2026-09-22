@@ -1,0 +1,13 @@
+{
+  "accepted": false,
+  "allowed_next_actions": [],
+  "controller_status": "CONTINUE",
+  "error_code": "INVALID_FRONTIER",
+  "violations": [
+    {
+      "code": "INVALID_FRONTIER",
+      "message": "Active Frontier requires at most three distinct Research Nodes",
+      "path": "$"
+    }
+  ]
+}

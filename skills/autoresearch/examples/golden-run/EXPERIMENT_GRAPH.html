@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>golden-tabular-auc · Experiment Graph</title>
+  <style>
+    :root { --cream:#fbf4df; --paper:#fffdf7; --ink:#443b35; --line:#d9c9a7;
+      --peach:#efaa83; --mint:#9fc9b5; --blue:#9dbfd4; --shadow:#9f8d7140; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:
+      radial-gradient(circle at 12% 8%, #fff9e9 0 7%, transparent 8%),
+      linear-gradient(135deg, var(--cream), #f7ead3); font:15px/1.45 ui-rounded,
+      "SF Pro Rounded", system-ui, sans-serif; min-height:100vh; }
+    header { position:sticky; left:0; top:0; z-index:3; padding:20px 28px;
+      background:#fff9edee; border-bottom:2px dashed var(--line); backdrop-filter:blur(8px); }
+    h1 { margin:0; font-size:25px; } header p { margin:5px 0 0; color:#75685c; }
+    .graph { display:flex; align-items:flex-start; gap:28px; padding:28px;
+      min-width:max-content; overflow-x:auto; }
+    .column { width:290px; display:flex; flex-direction:column; gap:18px; }
+    .column-label { font-weight:800; color:#87745d; padding-left:4px; }
+    .node { position:relative; padding:18px; background:var(--paper); border:2px solid var(--line);
+      border-radius:22px 16px 24px 14px; box-shadow:6px 7px 0 var(--shadow); }
+    .node::after { content:"→"; position:absolute; right:-24px; top:44%; color:#a98d69;
+      font-size:22px; font-weight:900; }
+    .column:last-child .node::after { display:none; }
+    .node.literature { border-color:var(--blue); }
+    .node-id { font:700 12px/1.2 ui-monospace, monospace; color:#887a6b; }
+    h3 { margin:7px 0 10px; font-size:18px; }
+    .badges { min-height:24px; display:flex; flex-wrap:wrap; gap:5px; }
+    .badge { display:inline-block; padding:3px 8px; border-radius:99px; font-size:11px;
+      font-weight:800; background:#eee2c9; }
+    .badge.role { background:#f7cbb2; } .badge.frontier { background:#bfe3cf; }
+    .detail { margin:12px 0 8px; } .status { margin:0; color:#7b6855; font-size:12px; }
+    .metric { min-height:18px; margin:8px 0 0; font-weight:800; color:#4d7464; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🧪 golden-tabular-auc</h1>
+    <p>Revision 10 · Benchmark golden-benchmark-v1
+      · Updated 2026-07-19T12:00:00Z</p>
+  </header>
+  <main class="graph"><section class="column"><div class="column-label">Depth 0</div><article class="node literature">
+<div class="node-id">LN-0001</div>
+<h3>Component-level directions for tabular AUC</h3>
+<div class="badges"></div>
+<p class="detail">First replace data weighting; if supported, pivot to a loss-only replacement while retaining the promoted base.</p>
+<p class="status">DIRECTIONS_FOUND</p>
+<p class="metric"></p>
+</article><article class="node research">
+<div class="node-id">RN-0001</div>
+<h3>Stable small MLP</h3>
+<div class="badges"><span class="badge role">Anchor</span></div>
+<p class="detail">Baseline root</p>
+<p class="status">OPEN · COMPLETED · NOT_EVALUABLE</p>
+<p class="metric">AUC: 0.8</p>
+</article></section><section class="column"><div class="column-label">Depth 1</div><article class="node research">
+<div class="node-id">RN-0002</div>
+<h3>Frequency-aware weighting replacement</h3>
+<div class="badges"><span class="badge role">Research Base</span><span class="badge role">Champion</span></div>
+<p class="detail">Replace only the example-weighting component.</p>
+<p class="status">OPEN · NORMAL_EARLY_STOP · SUPPORTED</p>
+<p class="metric">AUC: 0.812</p>
+</article></section><section class="column"><div class="column-label">Depth 2</div><article class="node research">
+<div class="node-id">RN-0003</div>
+<h3>Calibration-loss replacement</h3>
+<div class="badges"><span class="badge frontier">Frontier</span></div>
+<p class="detail">Replace only calibration loss.</p>
+<p class="status">OPEN · NOT_RUN · UNTESTED</p>
+<p class="metric"></p>
+</article></section></main>
+  <script id="experiment-graph" type="application/json">{"active_benchmark_id": "golden-benchmark-v1", "active_frontier": ["RN-0003"], "benchmarks": [{"benchmark_id": "golden-benchmark-v1", "benchmark_ref": "BENCHMARK.md", "display_metrics": [{"direction": "MAXIMIZE", "label": "AUC", "metric_id": "auc", "precision": 4, "role": "PRIMARY", "unit": "RATIO"}]}], "created_at": "2026-07-19T12:00:00Z", "edges": [{"edge_type": "PRIMARY_PARENT", "evidence_ref": null, "from_node_id": "RN-0001", "reason": null, "to_node_id": "RN-0002"}, {"edge_type": "DIRECTION", "evidence_ref": "evidence/weighting-mechanism.md", "from_node_id": "LN-0001", "reason": "Selected by the synthetic golden-run literature fixture.", "to_node_id": "RN-0002"}, {"edge_type": "PRIMARY_PARENT", "evidence_ref": null, "from_node_id": "RN-0002", "reason": null, "to_node_id": "RN-0003"}, {"edge_type": "DIRECTION", "evidence_ref": "evidence/loss-mechanism.md", "from_node_id": "LN-0001", "reason": "Selected by the synthetic golden-run literature fixture.", "to_node_id": "RN-0003"}], "nodes": [{"benchmark_id": "golden-benchmark-v1", "branch_reason": null, "branch_status": "OPEN", "candidate_priority": null, "classification": null, "comparison_target_id": "RN-0001", "created_at": "2026-07-19T12:00:00Z", "experiment_id": null, "falsification_condition": null, "hypothesis": null, "hypothesis_verdict": "NOT_EVALUABLE", "mechanism": null, "metric_summary": [{"delta_vs_champion": 0.0, "delta_vs_research_base": 0.0, "label": "AUC", "metric_id": "auc", "value": 0.8}], "node_id": "RN-0001", "node_type": "RESEARCH", "priority_reason": null, "refs": {"experiment_card": null, "interaction_review_pack": null, "paper_mechanism_cards": [], "research_log": null, "run_directory": null}, "release_condition": null, "research_base_id": "RN-0001", "run_outcome": "COMPLETED", "single_main_change": null, "title": "Stable small MLP"}, {"created_at": "2026-07-19T12:00:00Z", "direction_summary": "First replace data weighting; if supported, pivot to a loss-only replacement while retaining the promoted base.", "literature_survey_ref": "logs/research/literature_survey.md", "node_id": "LN-0001", "node_type": "LITERATURE", "outcome_reason": "Three synthetic fixtures demonstrate two testable example directions.", "research_question": "Which component replacements can improve AUC without changing the frozen benchmark?", "search_outcome": "DIRECTIONS_FOUND", "search_scope": "Synthetic component-mechanism fixtures for tabular classifiers.", "selected_papers": [{"mechanism_card_ref": "evidence/paper-1-mechanism.md", "pdf_ref": "papers/paper-1.pdf", "title": "Frequency-Aware Learning"}, {"mechanism_card_ref": "evidence/paper-2-mechanism.md", "pdf_ref": "papers/paper-2.pdf", "title": "Robust Tabular Calibration"}, {"mechanism_card_ref": "evidence/paper-3-mechanism.md", "pdf_ref": "papers/paper-3.pdf", "title": "Mechanism-Guided Ablation"}], "title": "Component-level directions for tabular AUC", "trigger": {"reason": "Bootstrap literature research after freezing the benchmark.", "source_node_ids": [], "source_ref": null, "type": "BOOTSTRAP"}}, {"benchmark_id": "golden-benchmark-v1", "branch_reason": null, "branch_status": "OPEN", "candidate_priority": "GOLD", "classification": {"change_operator": "REPLACE", "change_scope": "COMPONENT", "evidence_class": "N", "intervention_locus": "DATA", "research_layer": "L1"}, "comparison_target_id": "RN-0001", "created_at": "2026-07-19T12:00:00Z", "experiment_id": "E001", "falsification_condition": "AUC improvement is no greater than 0.5 pp.", "hypothesis": "Frequency-aware weighting improves AUC by more than 0.5 pp.", "hypothesis_verdict": "SUPPORTED", "mechanism": "The replacement reduces majority-example gradient dominance.", "metric_summary": [{"delta_vs_champion": 0.01200000000000001, "delta_vs_research_base": 0.01200000000000001, "label": "AUC", "metric_id": "auc", "value": 0.812}], "node_id": "RN-0002", "node_type": "RESEARCH", "priority_reason": "One component replacement with a falsifiable mediator prediction.", "refs": {"experiment_card": "experiments/E001.md", "interaction_review_pack": null, "paper_mechanism_cards": ["evidence/weighting-mechanism.md"], "research_log": "logs/research/volume_001.md", "run_directory": "logs/runs/E001/"}, "release_condition": null, "research_base_id": "RN-0001", "run_outcome": "NORMAL_EARLY_STOP", "single_main_change": "Replace only the example-weighting component.", "title": "Frequency-aware weighting replacement"}, {"benchmark_id": "golden-benchmark-v1", "branch_reason": null, "branch_status": "OPEN", "candidate_priority": "GOLD", "classification": {"change_operator": "REPLACE", "change_scope": "COMPONENT", "evidence_class": "N", "intervention_locus": "LOSS", "research_layer": "L2"}, "comparison_target_id": "RN-0002", "created_at": "2026-07-19T12:00:00Z", "experiment_id": null, "falsification_condition": "AUC does not improve or calibration error moves oppositely.", "hypothesis": "Replacing only calibration loss improves AUC.", "hypothesis_verdict": "UNTESTED", "mechanism": "A margin-calibrated loss improves ranking without changing the promoted weighting component.", "metric_summary": [{"delta_vs_champion": null, "delta_vs_research_base": null, "label": "AUC", "metric_id": "auc", "value": null}], "node_id": "RN-0003", "node_type": "RESEARCH", "priority_reason": "One component replacement with a falsifiable mediator prediction.", "refs": {"experiment_card": null, "interaction_review_pack": null, "paper_mechanism_cards": ["evidence/loss-mechanism.md"], "research_log": null, "run_directory": null}, "release_condition": null, "research_base_id": "RN-0002", "run_outcome": "NOT_RUN", "single_main_change": "Replace only calibration loss.", "title": "Calibration-loss replacement"}], "project_id": "golden-tabular-auc", "revision": 10, "role_events": [{"benchmark_id": "golden-benchmark-v1", "created_at": "2026-07-19T12:00:00Z", "event_type": "ASSIGNED", "evidence_ref": "BENCHMARK.md", "node_id": "RN-0001", "reason": "Initial frozen role", "role": "ANCHOR_BASELINE"}, {"benchmark_id": "golden-benchmark-v1", "created_at": "2026-07-19T12:00:00Z", "event_type": "ASSIGNED", "evidence_ref": "BENCHMARK.md", "node_id": "RN-0001", "reason": "Initial frozen role", "role": "RESEARCH_BASE"}, {"benchmark_id": "golden-benchmark-v1", "created_at": "2026-07-19T12:00:00Z", "event_type": "ASSIGNED", "evidence_ref": "BENCHMARK.md", "node_id": "RN-0001", "reason": "Initial frozen role", "role": "CHAMPION"}, {"benchmark_id": "golden-benchmark-v1", "created_at": "2026-07-19T12:00:00Z", "event_type": "REPLACED", "evidence_ref": "experiments/E001.md", "node_id": "RN-0002", "previous_node_id": "RN-0001", "reason": "Reconciled the best valid primary metric after result writeback", "role": "CHAMPION"}, {"benchmark_id": "golden-benchmark-v1", "created_at": "2026-07-19T12:00:00Z", "event_type": "REPLACED", "evidence_ref": "experiments/E001.md", "node_id": "RN-0002", "previous_node_id": "RN-0001", "reason": "The justified full run passed the frozen performance and structural gates.", "role": "RESEARCH_BASE", "single_seed_provisional": true}], "role_states": {"golden-benchmark-v1": {"anchor_baseline_id": "RN-0001", "champion_id": "RN-0002", "reference_baseline_ids": [], "research_base_id": "RN-0002", "simplification_anchor_id": "RN-0002"}}, "schema_version": "1.0", "stage_summaries": [{"covered_node_ids": ["RN-0001", "RN-0002"], "created_at": "2026-07-19T12:00:00Z", "route_decision": "PIVOT", "summary_id": "SS-001", "summary_ref": "logs/summaries/volume_001_summary.md", "trigger": "First supported formal experiment completed."}], "updated_at": "2026-07-19T12:00:00Z"}</script>
+</body>
+</html>

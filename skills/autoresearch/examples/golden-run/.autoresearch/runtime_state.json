@@ -1,0 +1,406 @@
+{
+  "active_run": null,
+  "applied_requests": [
+    {
+      "fingerprint": "4410c0d223ab8b7dbd58307e93da557427868daadc48886a1f1e0dc729a57a13",
+      "request_id": "init-20260719-001",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "CREATE_LITERATURE",
+          "CREATE_CANDIDATE",
+          "inspect"
+        ],
+        "result": {
+          "artifacts_written": [
+            "EXPERIMENT_GRAPH.json",
+            "EXPERIMENT_GRAPH.html",
+            ".autoresearch/runtime_state.json"
+          ],
+          "command": "init",
+          "controller_status": "CONTINUE",
+          "project_id": "golden-tabular-auc"
+        },
+        "revision": 1
+      }
+    },
+    {
+      "fingerprint": "8abe85f65f2451a2b5fe26ab985651dfe3a0de0e594aa6cc1c576cfdc4f471d0",
+      "request_id": "create-literature-20260719-001",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "inspect",
+          "validate",
+          "CREATE_LITERATURE",
+          "CREATE_CANDIDATE"
+        ],
+        "result": {
+          "action": "CREATE_LITERATURE",
+          "command": "propose",
+          "controller_status": "CONTINUE",
+          "node_id": "LN-0001",
+          "search_outcome": "DIRECTIONS_FOUND"
+        },
+        "revision": 2
+      }
+    },
+    {
+      "fingerprint": "5d8d64b6e67a97b8f38f1423a8065c34cc04283e069161ca345f401b72703149",
+      "request_id": "create-candidate-20260719-001",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "inspect",
+          "validate",
+          "CREATE_LITERATURE",
+          "CREATE_CANDIDATE"
+        ],
+        "result": {
+          "action": "CREATE_CANDIDATE",
+          "branch_status": "OPEN",
+          "candidate_priority": "GOLD",
+          "command": "propose",
+          "controller_status": "CONTINUE",
+          "node_id": "RN-0002"
+        },
+        "revision": 3
+      }
+    },
+    {
+      "fingerprint": "2f24fb1f4d95fad8a91ff0e895b39294472a6c280c08254b6a512f8e1ddd8988",
+      "request_id": "set-frontier-20260719-001",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "inspect",
+          "validate"
+        ],
+        "result": {
+          "action": "SET_FRONTIER",
+          "active_frontier": [
+            "RN-0002"
+          ],
+          "command": "propose",
+          "controller_status": "CONTINUE"
+        },
+        "revision": 4
+      }
+    },
+    {
+      "fingerprint": "a29b769d5be59b85fd60cc6778fafe65e06500e57d2b9886a6ca4600b01a4299",
+      "request_id": "full-run-20260719-001",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "inspect"
+        ],
+        "result": {
+          "artifact_refs": {
+            "artifact_manifest": "artifacts/full-run-20260719-001/artifacts_manifest.json",
+            "metrics_json": "artifacts/full-run-20260719-001/metrics.json",
+            "resolved_config": "artifacts/full-run-20260719-001/resolved_config.yaml",
+            "trainer_log": "artifacts/full-run-20260719-001/trainer.log"
+          },
+          "artifacts_written": [
+            "experiments/E001.md",
+            "logs/runs/E001/A01.jsonl"
+          ],
+          "attempt_id": "A01",
+          "command": "start-run",
+          "controller_status": "CONTINUE",
+          "cost_unit": "GPU_HOURS",
+          "experiment_id": "E001",
+          "node_id": "RN-0002",
+          "run_kind": "FULL"
+        },
+        "revision": 5
+      }
+    },
+    {
+      "fingerprint": "74fe3879b44a810be4c8aebc8abe4f9129f904a0ae194c210beb233ce27e9d12",
+      "request_id": "finish-run-20260719-001",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "PROMOTE_RESEARCH_BASE",
+          "ASSIGN_REFERENCE_BASELINE",
+          "inspect"
+        ],
+        "result": {
+          "artifacts_written": [
+            "experiments/E001.md",
+            "logs/research/volume_001.md",
+            "logs/runs/E001/A01.jsonl"
+          ],
+          "attempt_id": "A01",
+          "budget": {
+            "consumed": {
+              "attempts_started": 1,
+              "cost": 1.0,
+              "experiments_started": 1,
+              "run_seconds": 301.0
+            },
+            "limits": {
+              "cost_unit": "GPU_HOURS",
+              "max_cost": 12.0,
+              "max_experiments": 4,
+              "max_run_seconds": 4000.0
+            },
+            "new_experiment_limit_reached": false,
+            "terminal": false,
+            "time_or_cost_exhausted": false
+          },
+          "budget_overruns": [],
+          "command": "finish-run",
+          "controller_status": "CONTINUE",
+          "experiment_id": "E001",
+          "hypothesis_verdict": "SUPPORTED",
+          "node_id": "RN-0002",
+          "promotion_gate": {
+            "allowed_next_actions": [],
+            "reason": "Justified single run passed provisionally",
+            "status": "ELIGIBLE"
+          },
+          "role_events": [
+            {
+              "benchmark_id": "golden-benchmark-v1",
+              "created_at": "2026-07-19T12:00:00Z",
+              "event_type": "REPLACED",
+              "evidence_ref": "experiments/E001.md",
+              "node_id": "RN-0002",
+              "previous_node_id": "RN-0001",
+              "reason": "Reconciled the best valid primary metric after result writeback",
+              "role": "CHAMPION"
+            }
+          ],
+          "run_outcome": "NORMAL_EARLY_STOP"
+        },
+        "revision": 6
+      }
+    },
+    {
+      "fingerprint": "72a6904412688f0c3e60421b17e02009908e23291037e8de0040b2948a6d05f7",
+      "request_id": "promote-research-base-20260719-001",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "inspect",
+          "validate",
+          "CREATE_LITERATURE",
+          "CREATE_CANDIDATE"
+        ],
+        "result": {
+          "action": "PROMOTE_RESEARCH_BASE",
+          "command": "propose",
+          "controller_status": "CONTINUE",
+          "node_id": "RN-0002",
+          "previous_research_base_id": "RN-0001",
+          "promotion_gate": {
+            "allowed_next_actions": [],
+            "reason": "Justified single run passed provisionally",
+            "status": "ELIGIBLE"
+          }
+        },
+        "revision": 7
+      }
+    },
+    {
+      "fingerprint": "8679e9a00e34d276777a3eda0e6aa87dcfd61fb20a704f4ad9ad87118b740a36",
+      "request_id": "register-stage-summary-20260719-001",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "inspect",
+          "validate",
+          "CREATE_LITERATURE",
+          "CREATE_CANDIDATE"
+        ],
+        "result": {
+          "action": "REGISTER_STAGE_SUMMARY",
+          "command": "propose",
+          "controller_status": "CONTINUE",
+          "route_decision": "PIVOT",
+          "summary_id": "SS-001"
+        },
+        "revision": 8
+      }
+    },
+    {
+      "fingerprint": "c2bc7a08d066a6a5b156ead85c8ff74f3a61671234a9becc905ad2011b7a6e03",
+      "request_id": "create-candidate-20260719-002",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "inspect",
+          "validate",
+          "CREATE_LITERATURE",
+          "CREATE_CANDIDATE"
+        ],
+        "result": {
+          "action": "CREATE_CANDIDATE",
+          "branch_status": "OPEN",
+          "candidate_priority": "GOLD",
+          "command": "propose",
+          "controller_status": "CONTINUE",
+          "node_id": "RN-0003"
+        },
+        "revision": 9
+      }
+    },
+    {
+      "fingerprint": "2e54d8a1d697a313e79cf41a2e8b1d2ff9bc5ac569ade7ad553ac8d3e7d5acb5",
+      "request_id": "set-frontier-20260719-002",
+      "response": {
+        "accepted": true,
+        "allowed_next_actions": [
+          "inspect",
+          "validate"
+        ],
+        "result": {
+          "action": "SET_FRONTIER",
+          "active_frontier": [
+            "RN-0003"
+          ],
+          "command": "propose",
+          "controller_status": "CONTINUE"
+        },
+        "revision": 10
+      }
+    }
+  ],
+  "audit_counters": {
+    "stage_reflections": 1,
+    "subagent_calls": 0
+  },
+  "budget": {
+    "consumed": {
+      "attempts_started": 1,
+      "cost": 1.0,
+      "experiments_started": 1,
+      "run_seconds": 301.0
+    },
+    "limits": {
+      "cost_unit": "GPU_HOURS",
+      "max_cost": 12.0,
+      "max_experiments": 4,
+      "max_run_seconds": 4000.0
+    }
+  },
+  "contract_hashes": {
+    "benchmark_ref": "BENCHMARK.md",
+    "benchmark_sha256": "13f3bc74ab76bedf934a443d84f030fe081ef1d551b58f465908d411c65b9355",
+    "research_brief_ref": "RESEARCH_BRIEF.md",
+    "research_brief_sha256": "8e7bfb559f7c51369266a5b9c80cbfcf46a031715bd2048fa6e3c0b14f75590f"
+  },
+  "controller_status": "CONTINUE",
+  "current_phase": "CANDIDATE_DESIGN",
+  "experiments": {
+    "E001": {
+      "attempts": [
+        {
+          "artifact_refs": {
+            "artifact_manifest": "artifacts/full-run-20260719-001/artifacts_manifest.json",
+            "metrics_json": "artifacts/full-run-20260719-001/metrics.json",
+            "resolved_config": "artifacts/full-run-20260719-001/resolved_config.yaml",
+            "trainer_log": "artifacts/full-run-20260719-001/trainer.log"
+          },
+          "artifact_sha256": {
+            "artifact_manifest": "2b12af0ad460a23b5a985e66c380de3760fed83cd129e9bda667f7c94c20173c",
+            "metrics_json": "d27e5eb12ed0e057553e1c3b9130c32dc786362117dd76fc18361418f743fe3d",
+            "resolved_config": "d26fd17b6e74f2e9af4aa3666aff50f6e4e32e9937a709ea27a40c01b0192948",
+            "trainer_log": "ced09fd234a61cee149db26808e3c672f59990ea271f32ec00c13f649a696a3e"
+          },
+          "attempt_id": "A01",
+          "budget_overruns": [],
+          "checkpoint_ref": null,
+          "code_version": "golden-run-v1",
+          "command": "python train.py --config configs/weighting-replacement.json",
+          "config_ref": "configs/weighting-replacement.json",
+          "cost": 1.0,
+          "cost_unit": "GPU_HOURS",
+          "data_version": "golden-dataset-v1",
+          "decision": "Promote provisionally, then pivot to the loss bottleneck.",
+          "duration_seconds": 301.0,
+          "expected_artifacts": [],
+          "finished_at": "2026-07-19T12:00:00Z",
+          "hard_constraints_passed": true,
+          "hypothesis_verdict": "SUPPORTED",
+          "interpretation": "The weighting replacement improved AUC and supports the predicted direction.",
+          "metrics": {
+            "auc": 0.812
+          },
+          "planned_max_cost": 2.0,
+          "planned_max_seconds": 400.0,
+          "run_kind": "FULL",
+          "run_log_ref": "logs/runs/E001/A01.jsonl",
+          "run_outcome": "NORMAL_EARLY_STOP",
+          "seed": 7,
+          "started_at": "2026-07-19T12:00:00Z",
+          "status": "FINISHED",
+          "stop_reason": "The frozen early-stopping rule fired after one epoch."
+        }
+      ],
+      "card_ref": "experiments/E001.md",
+      "created_at": "2026-07-19T12:00:00Z",
+      "experiment_id": "E001",
+      "node_id": "RN-0002",
+      "preregistration": {
+        "classification": {
+          "change_operator": "REPLACE",
+          "change_scope": "COMPONENT",
+          "evidence_class": "N",
+          "intervention_locus": "DATA",
+          "research_layer": "L1"
+        },
+        "falsification_condition": "AUC improvement is no greater than 0.5 pp.",
+        "hypothesis": "Frequency-aware weighting improves AUC by more than 0.5 pp.",
+        "single_main_change": "Replace only the example-weighting component."
+      },
+      "run_directory_ref": "logs/runs/E001",
+      "runtime_record_sha256": "89e91ee3201d445ce050ae0bf1ebeb1a96d4fb9912b04b3f9249a09dced55236"
+    }
+  },
+  "last_trigger": "CANDIDATES_READY",
+  "next_ids": {
+    "experiment": 2,
+    "literature_node": 2,
+    "research_node": 4,
+    "stage_summary": 2
+  },
+  "node_seed_evidence": {
+    "RN-0001": {
+      "1": "evidence/baseline.md",
+      "2": "evidence/baseline.md",
+      "3": "evidence/baseline.md"
+    }
+  },
+  "node_seed_metrics": {
+    "RN-0001": {
+      "1": 0.8,
+      "2": 0.801,
+      "3": 0.799
+    }
+  },
+  "primary_metric": {
+    "branch_replacement_tolerance": 0.001,
+    "direction": "MAXIMIZE",
+    "fast_run_seconds": 300.0,
+    "metric_id": "auc",
+    "promotion_threshold": 0.005,
+    "simplification_tolerance": 0.005,
+    "target": 0.9
+  },
+  "project_id": "golden-tabular-auc",
+  "promotion_confirmation_policy": {
+    "mode": "SINGLE_RUN_JUSTIFIED",
+    "single_run_justification": "The frozen full run exceeds the five-minute qualification threshold.",
+    "single_run_threshold": {
+      "resource": "DURATION_SECONDS",
+      "value": 300.0
+    }
+  },
+  "revision": 10,
+  "runtime_version": "0.1.0",
+  "schema_version": "1.0"
+}

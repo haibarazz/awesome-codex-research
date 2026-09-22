@@ -6,6 +6,5 @@ venv/
 .env
 .env.*
 .autodl-remote/
-outputs/
-logs/
-
+/outputs/
+/logs/

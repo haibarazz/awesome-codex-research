@@ -1,0 +1,473 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autoresearch.local/schemas/runtime_state.schema.json",
+  "title": "AutoResearch Runtime State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "runtime_version",
+    "project_id",
+    "revision",
+    "controller_status",
+    "current_phase",
+    "last_trigger",
+    "contract_hashes",
+    "primary_metric",
+    "promotion_confirmation_policy",
+    "budget",
+    "next_ids",
+    "active_run",
+    "experiments",
+    "node_seed_metrics",
+    "node_seed_evidence",
+    "audit_counters",
+    "applied_requests"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "runtime_version": {"type": "string", "minLength": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "revision": {"type": "integer", "minimum": 1},
+    "controller_status": {
+      "enum": [
+        "CONTINUE",
+        "TARGET_REACHED",
+        "TARGET_NOT_REACHED",
+        "HUMAN_REVIEW_REQUIRED"
+      ]
+    },
+    "current_phase": {
+      "enum": [
+        "BOOTSTRAP",
+        "LITERATURE_RESEARCH",
+        "CANDIDATE_DESIGN",
+        "EXPERIMENT_EXECUTION",
+        "RESULT_ROUTING",
+        "STAGE_REFLECTION",
+        "TERMINATION",
+        "HUMAN_REVIEW"
+      ]
+    },
+    "last_trigger": {
+      "enum": [
+        "BOOTSTRAP_FROZEN",
+        "LITERATURE_COMPLETED",
+        "CANDIDATES_READY",
+        "EXPERIMENT_STARTED",
+        "EXPERIMENT_FINISHED",
+        "STAGE_SUMMARY_COMPLETED",
+        "RESEARCH_FINALIZED"
+      ]
+    },
+    "contract_hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "research_brief_ref",
+        "research_brief_sha256",
+        "benchmark_ref",
+        "benchmark_sha256"
+      ],
+      "properties": {
+        "research_brief_ref": {"type": "string", "minLength": 1},
+        "research_brief_sha256": {"pattern": "^[0-9a-f]{64}$"},
+        "benchmark_ref": {"type": "string", "minLength": 1},
+        "benchmark_sha256": {"pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "primary_metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "direction",
+        "target",
+        "promotion_threshold",
+        "simplification_tolerance",
+        "branch_replacement_tolerance",
+        "fast_run_seconds"
+      ],
+      "properties": {
+        "metric_id": {"type": "string", "minLength": 1},
+        "direction": {"enum": ["MAXIMIZE", "MINIMIZE"]},
+        "target": {"type": "number"},
+        "promotion_threshold": {"type": "number", "minimum": 0},
+        "simplification_tolerance": {"type": "number", "minimum": 0},
+        "branch_replacement_tolerance": {"type": "number", "minimum": 0},
+        "fast_run_seconds": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "promotion_confirmation_policy": {
+      "$ref": "#/$defs/promotionConfirmationPolicy"
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["limits", "consumed"],
+      "properties": {
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "max_experiments",
+            "max_run_seconds",
+            "max_cost",
+            "cost_unit"
+          ],
+          "properties": {
+            "max_experiments": {"type": ["integer", "null"], "minimum": 1},
+            "max_run_seconds": {
+              "type": ["number", "null"],
+              "exclusiveMinimum": 0
+            },
+            "max_cost": {
+              "type": ["number", "null"],
+              "exclusiveMinimum": 0
+            },
+            "cost_unit": {"type": ["string", "null"], "minLength": 1}
+          }
+        },
+        "consumed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "experiments_started",
+            "attempts_started",
+            "run_seconds",
+            "cost"
+          ],
+          "properties": {
+            "experiments_started": {"type": "integer", "minimum": 0},
+            "attempts_started": {"type": "integer", "minimum": 0},
+            "run_seconds": {"type": "number", "minimum": 0},
+            "cost": {"type": "number", "minimum": 0}
+          }
+        }
+      }
+    },
+    "next_ids": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "research_node",
+        "literature_node",
+        "experiment",
+        "stage_summary"
+      ],
+      "properties": {
+        "research_node": {"type": "integer", "minimum": 1},
+        "literature_node": {"type": "integer", "minimum": 1},
+        "experiment": {"type": "integer", "minimum": 1},
+        "stage_summary": {"type": "integer", "minimum": 1}
+      }
+    },
+    "active_run": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "node_id",
+            "experiment_id",
+            "attempt_id",
+            "run_kind",
+            "started_at",
+            "card_ref",
+            "run_log_ref"
+          ],
+          "properties": {
+            "node_id": {"pattern": "^RN-[0-9]{4}$"},
+            "experiment_id": {"pattern": "^E[0-9]{3}$"},
+            "attempt_id": {"pattern": "^A[0-9]{2}$"},
+            "run_kind": {
+              "enum": ["FULL", "SMOKE", "PROMOTION_CONFIRMATION", "RETRY"]
+            },
+            "started_at": {"type": "string", "format": "date-time"},
+            "card_ref": {"type": "string", "minLength": 1},
+            "run_log_ref": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    },
+    "experiments": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/experiment"}
+    },
+    "node_seed_metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {"type": "number"}
+      }
+    },
+    "node_seed_evidence": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {"type": "string", "minLength": 1}
+      }
+    },
+    "audit_counters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage_reflections", "subagent_calls"],
+      "properties": {
+        "stage_reflections": {"type": "integer", "minimum": 0},
+        "subagent_calls": {"type": "integer", "minimum": 0}
+      }
+    },
+    "applied_requests": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["request_id", "fingerprint", "response"],
+        "properties": {
+          "request_id": {"type": "string", "minLength": 3},
+          "fingerprint": {"pattern": "^[0-9a-f]{64}$"},
+          "response": {"type": "object"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "promotionConfirmationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "single_run_threshold",
+        "single_run_justification"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "TWO_SEEDS",
+            "ONE_CONFIRM_SEED",
+            "SINGLE_RUN_JUSTIFIED"
+          ]
+        },
+        "single_run_threshold": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["resource", "value"],
+              "properties": {
+                "resource": {"enum": ["DURATION_SECONDS", "COST"]},
+                "value": {"type": "number", "exclusiveMinimum": 0}
+              }
+            }
+          ]
+        },
+        "single_run_justification": {"type": ["string", "null"]}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"mode": {"const": "SINGLE_RUN_JUSTIFIED"}}
+          },
+          "then": {
+            "properties": {
+              "single_run_threshold": {"type": "object"},
+              "single_run_justification": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "single_run_threshold": {"type": "null"},
+              "single_run_justification": {"type": "null"}
+            }
+          }
+        }
+      ]
+    },
+    "attempt": {
+      "type": "object",
+      "required": [
+        "attempt_id",
+        "run_kind",
+        "seed",
+        "status",
+        "started_at",
+        "finished_at",
+        "command",
+        "code_version",
+        "data_version",
+        "planned_max_seconds",
+        "planned_max_cost",
+        "cost_unit",
+        "config_ref",
+        "artifact_refs",
+        "artifact_sha256",
+        "expected_artifacts",
+        "run_log_ref",
+        "run_outcome",
+        "hypothesis_verdict",
+        "metrics",
+        "duration_seconds",
+        "cost",
+        "hard_constraints_passed",
+        "stop_reason",
+        "checkpoint_ref"
+      ],
+      "properties": {
+        "attempt_id": {"pattern": "^A[0-9]{2}$"},
+        "run_kind": {
+          "enum": ["FULL", "SMOKE", "PROMOTION_CONFIRMATION", "RETRY"]
+        },
+        "seed": {"type": "integer"},
+        "status": {"enum": ["RUNNING", "FINISHED"]},
+        "started_at": {"type": "string", "format": "date-time"},
+        "finished_at": {"type": ["string", "null"], "format": "date-time"},
+        "command": {"type": "string", "minLength": 1},
+        "code_version": {"type": "string", "minLength": 1},
+        "data_version": {"type": "string", "minLength": 1},
+        "planned_max_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "planned_max_cost": {"type": "number", "minimum": 0},
+        "cost_unit": {"type": ["string", "null"], "minLength": 1},
+        "config_ref": {"type": "string", "minLength": 1},
+        "artifact_refs": {
+          "type": "object",
+          "properties": {
+            "resolved_config": {"type": "string", "minLength": 1},
+            "metrics_json": {"type": "string", "minLength": 1},
+            "artifact_manifest": {"type": "string", "minLength": 1},
+            "trainer_log": {"type": "string", "minLength": 1}
+          },
+          "additionalProperties": false
+        },
+        "artifact_sha256": {
+          "type": "object",
+          "properties": {
+            "resolved_config": {"pattern": "^[0-9a-f]{64}$"},
+            "metrics_json": {"pattern": "^[0-9a-f]{64}$"},
+            "artifact_manifest": {"pattern": "^[0-9a-f]{64}$"},
+            "trainer_log": {"pattern": "^[0-9a-f]{64}$"}
+          },
+          "additionalProperties": false
+        },
+        "expected_artifacts": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "run_log_ref": {"type": "string", "minLength": 1},
+        "run_outcome": {
+          "type": ["string", "null"],
+          "enum": [
+            "COMPLETED",
+            "NORMAL_EARLY_STOP",
+            "STOP_LOSS",
+            "TECHNICAL_FAILURE",
+            null
+          ]
+        },
+        "hypothesis_verdict": {
+          "type": ["string", "null"],
+          "enum": [
+            "SUPPORTED",
+            "NOT_SUPPORTED",
+            "INCONCLUSIVE",
+            "NOT_EVALUABLE",
+            null
+          ]
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {"type": "number"}
+        },
+        "duration_seconds": {"type": ["number", "null"], "minimum": 0},
+        "cost": {"type": ["number", "null"], "minimum": 0},
+        "hard_constraints_passed": {"type": ["boolean", "null"]},
+        "stop_reason": {"type": ["string", "null"]},
+        "checkpoint_ref": {"type": ["string", "null"]},
+        "budget_overruns": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "interpretation": {"type": ["string", "null"]},
+        "decision": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "experiment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "experiment_id",
+        "node_id",
+        "created_at",
+        "card_ref",
+        "run_directory_ref",
+        "preregistration",
+        "runtime_record_sha256",
+        "attempts"
+      ],
+      "properties": {
+        "experiment_id": {"pattern": "^E[0-9]{3}$"},
+        "node_id": {"pattern": "^RN-[0-9]{4}$"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "card_ref": {"type": "string", "minLength": 1},
+        "run_directory_ref": {"type": "string", "minLength": 1},
+        "preregistration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hypothesis",
+            "single_main_change",
+            "falsification_condition",
+            "classification"
+          ],
+          "properties": {
+            "hypothesis": {"type": "string", "minLength": 1},
+            "single_main_change": {"type": "string", "minLength": 1},
+            "falsification_condition": {"type": "string", "minLength": 1},
+            "classification": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "evidence_class",
+                "change_scope",
+                "research_layer",
+                "intervention_locus",
+                "change_operator"
+              ],
+              "properties": {
+                "evidence_class": {"enum": ["R", "A", "N"]},
+                "change_scope": {"enum": ["FULL_METHOD", "COMPONENT", "PROTOCOL"]},
+                "research_layer": {"enum": ["L1", "L2", "L3", "L4"]},
+                "intervention_locus": {
+                  "enum": [
+                    "DATA",
+                    "FEATURE",
+                    "BACKBONE",
+                    "COMPONENT",
+                    "BRANCH",
+                    "LOSS",
+                    "OPTIMIZATION",
+                    "INFERENCE"
+                  ]
+                },
+                "change_operator": {
+                  "enum": ["ADD", "REPLACE", "DELETE", "REWIRE", "MERGE", "SPLIT"]
+                }
+              }
+            }
+          }
+        },
+        "runtime_record_sha256": {"pattern": "^[0-9a-f]{64}$"},
+        "attempts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/attempt"}
+        }
+      }
+    }
+  }
+}

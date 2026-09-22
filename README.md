@@ -77,6 +77,15 @@
       <p>面向计算设计科学研究，从同一研究锚点建立问题／理论与技术／算法两条文献线，核验全文、制作对话地图，并澄清最近邻、理论祖先、方法缺口和研究定位。</p>
     </td>
   </tr>
+  <tr>
+    <td width="80" align="center" valign="middle">
+      <img src="docs/assets/autoresearch.png" alt="自主机器学习研究闭环插画" width="60">
+    </td>
+    <td valign="middle">
+      <h3>AutoResearch Skill</h3>
+      <p>在冻结 Research Brief、Benchmark 和预算后，自主完成文献机制分析、候选设计、预登记实验、运行修复、实验图路由与阶段反思，直到达到目标或耗尽预登记预算。</p>
+    </td>
+  </tr>
 </table>
 
 完整来源、版本和本地改动记录见 [`docs/catalog.md`](docs/catalog.md)。
@@ -98,7 +107,8 @@
 │   ├── auto-exp/
 │   ├── academic-paper-polisher/
 │   ├── review-comment-decomposer/
-│   └── research-literature-review/
+│   ├── research-literature-review/
+│   └── autoresearch/
 ├── dist/                             # 可直接分发的安装包
 │   └── academic-paper-polisher.skill
 ├── docs/                             # 目录、来源和视觉资源

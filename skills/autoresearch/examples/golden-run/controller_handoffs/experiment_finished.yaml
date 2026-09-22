@@ -1,0 +1,17 @@
+controller_handoff:
+  trigger: EXPERIMENT_FINISHED
+  current_phase: RESULT_ROUTING
+  controller_status: CONTINUE
+  evidence_summary: E001/A01 improved AUC from 0.8000 to 0.8120 under the frozen Benchmark.
+  graph_operations:
+    - operation: AGGREGATE
+      target: RN-0002
+      reason: Aggregate the completed result before selecting a route.
+  artifacts_written:
+    - experiments/E001.md
+    - logs/runs/E001/A01.jsonl
+    - logs/research/volume_001.md
+  candidate_drafts: []
+  next_phase: STAGE_REFLECTION
+  next_action: Run Stage Reflection on E001 and the promoted-base decision.
+  next_target: logs/summaries/volume_001_summary.md

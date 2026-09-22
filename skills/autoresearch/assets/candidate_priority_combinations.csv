@@ -1,0 +1,163 @@
+﻿combination_id,evidence_class,change_scope,intervention_locus,change_operator,combination_status,structural_default_priority,rule_ids,decision_reason,release_or_next_step
+N-001,N,FULL_METHOD,SYSTEM,ADD,VALID,REJECT,S-FULL;R-STRUCTURAL-PROLIFERATION,全方法同时在系统、骨干或分支层新增/拆分，改动过多且结构膨胀，无法归因于一个主要假设。,不得按当前组合运行；必须拆成单一组件假设，或改为替换/合并方案。
+N-002,N,FULL_METHOD,SYSTEM,REPLACE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-003,N,FULL_METHOD,SYSTEM,DELETE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-004,N,FULL_METHOD,SYSTEM,REWIRE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-005,N,FULL_METHOD,SYSTEM,MERGE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-006,N,FULL_METHOD,SYSTEM,SPLIT,VALID,REJECT,S-FULL;R-STRUCTURAL-PROLIFERATION,全方法同时在系统、骨干或分支层新增/拆分，改动过多且结构膨胀，无法归因于一个主要假设。,不得按当前组合运行；必须拆成单一组件假设，或改为替换/合并方案。
+N-007,N,FULL_METHOD,DATA,ADD,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-008,N,FULL_METHOD,DATA,REPLACE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-009,N,FULL_METHOD,DATA,DELETE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-010,N,FULL_METHOD,DATA,REWIRE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-011,N,FULL_METHOD,DATA,MERGE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-012,N,FULL_METHOD,DATA,SPLIT,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-013,N,FULL_METHOD,FEATURE,ADD,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-014,N,FULL_METHOD,FEATURE,REPLACE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-015,N,FULL_METHOD,FEATURE,DELETE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-016,N,FULL_METHOD,FEATURE,REWIRE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-017,N,FULL_METHOD,FEATURE,MERGE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-018,N,FULL_METHOD,FEATURE,SPLIT,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-019,N,FULL_METHOD,BACKBONE,ADD,VALID,REJECT,S-FULL;R-STRUCTURAL-PROLIFERATION,全方法同时在系统、骨干或分支层新增/拆分，改动过多且结构膨胀，无法归因于一个主要假设。,不得按当前组合运行；必须拆成单一组件假设，或改为替换/合并方案。
+N-020,N,FULL_METHOD,BACKBONE,REPLACE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-021,N,FULL_METHOD,BACKBONE,DELETE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-022,N,FULL_METHOD,BACKBONE,REWIRE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-023,N,FULL_METHOD,BACKBONE,MERGE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-024,N,FULL_METHOD,BACKBONE,SPLIT,VALID,REJECT,S-FULL;R-STRUCTURAL-PROLIFERATION,全方法同时在系统、骨干或分支层新增/拆分，改动过多且结构膨胀，无法归因于一个主要假设。,不得按当前组合运行；必须拆成单一组件假设，或改为替换/合并方案。
+N-025,N,FULL_METHOD,COMPONENT,ADD,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-026,N,FULL_METHOD,COMPONENT,REPLACE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-027,N,FULL_METHOD,COMPONENT,DELETE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-028,N,FULL_METHOD,COMPONENT,REWIRE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-029,N,FULL_METHOD,COMPONENT,MERGE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-030,N,FULL_METHOD,COMPONENT,SPLIT,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-031,N,FULL_METHOD,BRANCH,ADD,VALID,REJECT,S-FULL;R-STRUCTURAL-PROLIFERATION,全方法同时在系统、骨干或分支层新增/拆分，改动过多且结构膨胀，无法归因于一个主要假设。,不得按当前组合运行；必须拆成单一组件假设，或改为替换/合并方案。
+N-032,N,FULL_METHOD,BRANCH,REPLACE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-033,N,FULL_METHOD,BRANCH,DELETE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-034,N,FULL_METHOD,BRANCH,REWIRE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-035,N,FULL_METHOD,BRANCH,MERGE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-036,N,FULL_METHOD,BRANCH,SPLIT,VALID,REJECT,S-FULL;R-STRUCTURAL-PROLIFERATION,全方法同时在系统、骨干或分支层新增/拆分，改动过多且结构膨胀，无法归因于一个主要假设。,不得按当前组合运行；必须拆成单一组件假设，或改为替换/合并方案。
+N-037,N,FULL_METHOD,LOSS,ADD,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-038,N,FULL_METHOD,LOSS,REPLACE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-039,N,FULL_METHOD,LOSS,DELETE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-040,N,FULL_METHOD,LOSS,REWIRE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-041,N,FULL_METHOD,LOSS,MERGE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-042,N,FULL_METHOD,LOSS,SPLIT,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-043,N,FULL_METHOD,OPTIMIZATION,ADD,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-044,N,FULL_METHOD,OPTIMIZATION,REPLACE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-045,N,FULL_METHOD,OPTIMIZATION,DELETE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-046,N,FULL_METHOD,OPTIMIZATION,REWIRE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-047,N,FULL_METHOD,OPTIMIZATION,MERGE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-048,N,FULL_METHOD,OPTIMIZATION,SPLIT,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-049,N,FULL_METHOD,INFERENCE,ADD,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-050,N,FULL_METHOD,INFERENCE,REPLACE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-051,N,FULL_METHOD,INFERENCE,DELETE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-052,N,FULL_METHOD,INFERENCE,REWIRE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-053,N,FULL_METHOD,INFERENCE,MERGE,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-054,N,FULL_METHOD,INFERENCE,SPLIT,VALID,HOLD,S-FULL;H-DECOMPOSE,全方法 N candidate 默认暂缓；先拆成可独立证伪的组件级实验，再重新分类。,拆成组件级候选，并为每个候选定义独立支持预测与证伪条件。
+N-055,N,COMPONENT,SYSTEM,ADD,INVALID,INVALID,V-SCOPE-LOCUS-01,组件级改动不能同时把主要改动位置标为全系统；应改为全方法，或选择具体组件位置。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-056,N,COMPONENT,SYSTEM,REPLACE,INVALID,INVALID,V-SCOPE-LOCUS-01,组件级改动不能同时把主要改动位置标为全系统；应改为全方法，或选择具体组件位置。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-057,N,COMPONENT,SYSTEM,DELETE,INVALID,INVALID,V-SCOPE-LOCUS-01,组件级改动不能同时把主要改动位置标为全系统；应改为全方法，或选择具体组件位置。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-058,N,COMPONENT,SYSTEM,REWIRE,INVALID,INVALID,V-SCOPE-LOCUS-01,组件级改动不能同时把主要改动位置标为全系统；应改为全方法，或选择具体组件位置。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-059,N,COMPONENT,SYSTEM,MERGE,INVALID,INVALID,V-SCOPE-LOCUS-01,组件级改动不能同时把主要改动位置标为全系统；应改为全方法，或选择具体组件位置。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-060,N,COMPONENT,SYSTEM,SPLIT,INVALID,INVALID,V-SCOPE-LOCUS-01,组件级改动不能同时把主要改动位置标为全系统；应改为全方法，或选择具体组件位置。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-061,N,COMPONENT,DATA,ADD,VALID,SILVER,S-COMPONENT;M-DATA-ADD,新增容易带来堆叠或额外预算，值得验证但默认不进入 Gold。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-062,N,COMPONENT,DATA,REPLACE,VALID,GOLD,S-COMPONENT;M-DATA-REPLACE,组件级替换保持对照清晰且不增加结构数量，是优先级最高的验证形式。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-063,N,COMPONENT,DATA,DELETE,VALID,GOLD,S-COMPONENT;M-DATA-DELETE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-064,N,COMPONENT,DATA,REWIRE,VALID,SILVER,S-COMPONENT;M-DATA-REWIRE,候选具有可测试价值，但归因、通用性或结构风险弱于 Gold。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-065,N,COMPONENT,DATA,MERGE,VALID,GOLD,S-COMPONENT;M-DATA-MERGE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-066,N,COMPONENT,DATA,SPLIT,VALID,HOLD,S-COMPONENT;M-DATA-SPLIT,数据拆分可能改变 Benchmark 固定划分；先证明只是训练机制而非评测契约变化。,证明不改变固定数据划分及标签口径。
+N-067,N,COMPONENT,FEATURE,ADD,VALID,SILVER,S-COMPONENT;M-FEATURE-ADD,新增容易带来堆叠或额外预算，值得验证但默认不进入 Gold。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-068,N,COMPONENT,FEATURE,REPLACE,VALID,GOLD,S-COMPONENT;M-FEATURE-REPLACE,组件级替换保持对照清晰且不增加结构数量，是优先级最高的验证形式。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-069,N,COMPONENT,FEATURE,DELETE,VALID,GOLD,S-COMPONENT;M-FEATURE-DELETE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-070,N,COMPONENT,FEATURE,REWIRE,VALID,GOLD,S-COMPONENT;M-FEATURE-REWIRE,不增加主要结构数量，且能隔离验证单一机制，默认进入 Gold。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-071,N,COMPONENT,FEATURE,MERGE,VALID,GOLD,S-COMPONENT;M-FEATURE-MERGE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-072,N,COMPONENT,FEATURE,SPLIT,VALID,SILVER,S-COMPONENT;M-FEATURE-SPLIT,拆分提高结构或执行复杂度，只有在假设清晰且不形成分支膨胀时才运行。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-073,N,COMPONENT,BACKBONE,ADD,VALID,HOLD,S-COMPONENT;M-BACKBONE-ADD,新增或拆分骨干接近多骨干堆叠；先设计单骨干替换实验并证明并行结构不可替代。,先设计骨干替换方案，避免并行骨干堆叠。
+N-074,N,COMPONENT,BACKBONE,REPLACE,VALID,GOLD,S-COMPONENT;M-BACKBONE-REPLACE,组件级替换保持对照清晰且不增加结构数量，是优先级最高的验证形式。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-075,N,COMPONENT,BACKBONE,DELETE,VALID,GOLD,S-COMPONENT;M-BACKBONE-DELETE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-076,N,COMPONENT,BACKBONE,REWIRE,VALID,GOLD,S-COMPONENT;M-BACKBONE-REWIRE,不增加主要结构数量，且能隔离验证单一机制，默认进入 Gold。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-077,N,COMPONENT,BACKBONE,MERGE,VALID,GOLD,S-COMPONENT;M-BACKBONE-MERGE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-078,N,COMPONENT,BACKBONE,SPLIT,VALID,HOLD,S-COMPONENT;M-BACKBONE-SPLIT,新增或拆分骨干接近多骨干堆叠；先设计单骨干替换实验并证明并行结构不可替代。,先设计骨干替换方案，避免并行骨干堆叠。
+N-079,N,COMPONENT,COMPONENT,ADD,VALID,SILVER,S-COMPONENT;M-COMPONENT-ADD,新增容易带来堆叠或额外预算，值得验证但默认不进入 Gold。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-080,N,COMPONENT,COMPONENT,REPLACE,VALID,GOLD,S-COMPONENT;M-COMPONENT-REPLACE,组件级替换保持对照清晰且不增加结构数量，是优先级最高的验证形式。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-081,N,COMPONENT,COMPONENT,DELETE,VALID,GOLD,S-COMPONENT;M-COMPONENT-DELETE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-082,N,COMPONENT,COMPONENT,REWIRE,VALID,GOLD,S-COMPONENT;M-COMPONENT-REWIRE,不增加主要结构数量，且能隔离验证单一机制，默认进入 Gold。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-083,N,COMPONENT,COMPONENT,MERGE,VALID,GOLD,S-COMPONENT;M-COMPONENT-MERGE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-084,N,COMPONENT,COMPONENT,SPLIT,VALID,SILVER,S-COMPONENT;M-COMPONENT-SPLIT,拆分提高结构或执行复杂度，只有在假设清晰且不形成分支膨胀时才运行。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-085,N,COMPONENT,BRANCH,ADD,VALID,SILVER,S-COMPONENT;M-BRANCH-ADD,新增分支具有结构膨胀风险；可验证但仅为 Silver，成功后必须执行 Branch Addition Gate。,允许首次验证；若有效，必须执行替换实验，通过 Branch Addition Gate 后才可能晋升底座。
+N-086,N,COMPONENT,BRANCH,REPLACE,VALID,GOLD,S-COMPONENT;M-BRANCH-REPLACE,组件级替换保持对照清晰且不增加结构数量，是优先级最高的验证形式。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-087,N,COMPONENT,BRANCH,DELETE,VALID,GOLD,S-COMPONENT;M-BRANCH-DELETE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,纳入同一次 Simplification Campaign：既比较最终联合删除结果与本次精简前 Research Base，也比较谱系累计退化与 Simplification Anchor。
+N-088,N,COMPONENT,BRANCH,REWIRE,VALID,GOLD,S-COMPONENT;M-BRANCH-REWIRE,不增加主要结构数量，且能隔离验证单一机制，默认进入 Gold。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-089,N,COMPONENT,BRANCH,MERGE,VALID,GOLD,S-COMPONENT;M-BRANCH-MERGE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-090,N,COMPONENT,BRANCH,SPLIT,VALID,HOLD,S-COMPONENT;M-BRANCH-SPLIT,拆分已有分支会直接增加分支数量；先证明不能通过替换、重连或合并验证同一假设。,先证明替换、重连或合并不能检验同一假设。
+N-091,N,COMPONENT,LOSS,ADD,VALID,SILVER,S-COMPONENT;M-LOSS-ADD,新增容易带来堆叠或额外预算，值得验证但默认不进入 Gold。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-092,N,COMPONENT,LOSS,REPLACE,VALID,GOLD,S-COMPONENT;M-LOSS-REPLACE,组件级替换保持对照清晰且不增加结构数量，是优先级最高的验证形式。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-093,N,COMPONENT,LOSS,DELETE,VALID,GOLD,S-COMPONENT;M-LOSS-DELETE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-094,N,COMPONENT,LOSS,REWIRE,VALID,GOLD,S-COMPONENT;M-LOSS-REWIRE,不增加主要结构数量，且能隔离验证单一机制，默认进入 Gold。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-095,N,COMPONENT,LOSS,MERGE,VALID,GOLD,S-COMPONENT;M-LOSS-MERGE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-096,N,COMPONENT,LOSS,SPLIT,VALID,SILVER,S-COMPONENT;M-LOSS-SPLIT,拆分提高结构或执行复杂度，只有在假设清晰且不形成分支膨胀时才运行。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-097,N,COMPONENT,OPTIMIZATION,ADD,VALID,SILVER,S-COMPONENT;M-OPTIMIZATION-ADD,新增容易带来堆叠或额外预算，值得验证但默认不进入 Gold。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-098,N,COMPONENT,OPTIMIZATION,REPLACE,VALID,SILVER,S-COMPONENT;M-OPTIMIZATION-REPLACE,优化位置容易退化为调参；只有改变机制且遵守同方向最多三次调参时才运行。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-099,N,COMPONENT,OPTIMIZATION,DELETE,VALID,SILVER,S-COMPONENT;M-OPTIMIZATION-DELETE,优化位置容易退化为调参；只有改变机制且遵守同方向最多三次调参时才运行。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-100,N,COMPONENT,OPTIMIZATION,REWIRE,VALID,SILVER,S-COMPONENT;M-OPTIMIZATION-REWIRE,优化位置容易退化为调参；只有改变机制且遵守同方向最多三次调参时才运行。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-101,N,COMPONENT,OPTIMIZATION,MERGE,VALID,SILVER,S-COMPONENT;M-OPTIMIZATION-MERGE,优化位置容易退化为调参；只有改变机制且遵守同方向最多三次调参时才运行。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-102,N,COMPONENT,OPTIMIZATION,SPLIT,VALID,HOLD,S-COMPONENT;M-OPTIMIZATION-SPLIT,多优化路径会降低归因并增加调参空间；先压缩为一个可证伪的优化假设。,补齐可归因的单一假设和公平实验条件。
+N-103,N,COMPONENT,INFERENCE,ADD,VALID,SILVER,S-COMPONENT;M-INFERENCE-ADD,新增容易带来堆叠或额外预算，值得验证但默认不进入 Gold。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-104,N,COMPONENT,INFERENCE,REPLACE,VALID,GOLD,S-COMPONENT;M-INFERENCE-REPLACE,组件级替换保持对照清晰且不增加结构数量，是优先级最高的验证形式。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-105,N,COMPONENT,INFERENCE,DELETE,VALID,GOLD,S-COMPONENT;M-INFERENCE-DELETE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-106,N,COMPONENT,INFERENCE,REWIRE,VALID,GOLD,S-COMPONENT;M-INFERENCE-REWIRE,不增加主要结构数量，且能隔离验证单一机制，默认进入 Gold。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-107,N,COMPONENT,INFERENCE,MERGE,VALID,GOLD,S-COMPONENT;M-INFERENCE-MERGE,组件级删除/合并具有高可归因性和精简价值；优先验证，但只有分支删除可使用 0.5 pp 精简额度。,通过全局证据、公平性和可证伪硬门后优先运行；实验结果仍按 Research Base 晋升规则处理。
+N-108,N,COMPONENT,INFERENCE,SPLIT,VALID,SILVER,S-COMPONENT;M-INFERENCE-SPLIT,拆分提高结构或执行复杂度，只有在假设清晰且不形成分支膨胀时才运行。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-109,N,PROTOCOL,SYSTEM,ADD,VALID,HOLD,S-PROTOCOL;H-SYSTEM-ADD,新增系统级协议容易形成第二套评测或训练口径，必须先证明不会改变 Benchmark。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。
+N-110,N,PROTOCOL,SYSTEM,REPLACE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-111,N,PROTOCOL,SYSTEM,DELETE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-112,N,PROTOCOL,SYSTEM,REWIRE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-113,N,PROTOCOL,SYSTEM,MERGE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-114,N,PROTOCOL,SYSTEM,SPLIT,VALID,HOLD,S-PROTOCOL;H-PROTOCOL-SPLIT,协议拆分会增加比较口径或执行路径，必须先证明 Benchmark 仍唯一且可比。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。
+N-115,N,PROTOCOL,DATA,ADD,VALID,HOLD,S-PROTOCOL;H-DATA-CONTRACT,任何数据协议操作都可能改变固定划分、样本边界或标签口径，先证明 Benchmark 未变。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。
+N-116,N,PROTOCOL,DATA,REPLACE,VALID,HOLD,S-PROTOCOL;H-DATA-CONTRACT,任何数据协议操作都可能改变固定划分、样本边界或标签口径，先证明 Benchmark 未变。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。
+N-117,N,PROTOCOL,DATA,DELETE,VALID,HOLD,S-PROTOCOL;H-DATA-CONTRACT,任何数据协议操作都可能改变固定划分、样本边界或标签口径，先证明 Benchmark 未变。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。
+N-118,N,PROTOCOL,DATA,REWIRE,VALID,HOLD,S-PROTOCOL;H-DATA-CONTRACT,任何数据协议操作都可能改变固定划分、样本边界或标签口径，先证明 Benchmark 未变。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。
+N-119,N,PROTOCOL,DATA,MERGE,VALID,HOLD,S-PROTOCOL;H-DATA-CONTRACT,任何数据协议操作都可能改变固定划分、样本边界或标签口径，先证明 Benchmark 未变。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。
+N-120,N,PROTOCOL,DATA,SPLIT,VALID,HOLD,S-PROTOCOL;H-DATA-CONTRACT,任何数据协议操作都可能改变固定划分、样本边界或标签口径，先证明 Benchmark 未变。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。
+N-121,N,PROTOCOL,FEATURE,ADD,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-122,N,PROTOCOL,FEATURE,REPLACE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-123,N,PROTOCOL,FEATURE,DELETE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-124,N,PROTOCOL,FEATURE,REWIRE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-125,N,PROTOCOL,FEATURE,MERGE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-126,N,PROTOCOL,FEATURE,SPLIT,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-127,N,PROTOCOL,BACKBONE,ADD,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-128,N,PROTOCOL,BACKBONE,REPLACE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-129,N,PROTOCOL,BACKBONE,DELETE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-130,N,PROTOCOL,BACKBONE,REWIRE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-131,N,PROTOCOL,BACKBONE,MERGE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-132,N,PROTOCOL,BACKBONE,SPLIT,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-133,N,PROTOCOL,COMPONENT,ADD,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-134,N,PROTOCOL,COMPONENT,REPLACE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-135,N,PROTOCOL,COMPONENT,DELETE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-136,N,PROTOCOL,COMPONENT,REWIRE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-137,N,PROTOCOL,COMPONENT,MERGE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-138,N,PROTOCOL,COMPONENT,SPLIT,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-139,N,PROTOCOL,BRANCH,ADD,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-140,N,PROTOCOL,BRANCH,REPLACE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-141,N,PROTOCOL,BRANCH,DELETE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-142,N,PROTOCOL,BRANCH,REWIRE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-143,N,PROTOCOL,BRANCH,MERGE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-144,N,PROTOCOL,BRANCH,SPLIT,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-145,N,PROTOCOL,LOSS,ADD,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-146,N,PROTOCOL,LOSS,REPLACE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-147,N,PROTOCOL,LOSS,DELETE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-148,N,PROTOCOL,LOSS,REWIRE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-149,N,PROTOCOL,LOSS,MERGE,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-150,N,PROTOCOL,LOSS,SPLIT,INVALID,INVALID,V-SCOPE-LOCUS-02,协议级改动只能落在全系统协议、数据协议、优化协议或推理协议；模型内部结构应归为组件级。,重新填写互相一致的 Change Scope 与 Intervention Locus。
+N-151,N,PROTOCOL,OPTIMIZATION,ADD,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-152,N,PROTOCOL,OPTIMIZATION,REPLACE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-153,N,PROTOCOL,OPTIMIZATION,DELETE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-154,N,PROTOCOL,OPTIMIZATION,REWIRE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-155,N,PROTOCOL,OPTIMIZATION,MERGE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-156,N,PROTOCOL,OPTIMIZATION,SPLIT,VALID,HOLD,S-PROTOCOL;H-PROTOCOL-SPLIT,协议拆分会增加比较口径或执行路径，必须先证明 Benchmark 仍唯一且可比。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。
+N-157,N,PROTOCOL,INFERENCE,ADD,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-158,N,PROTOCOL,INFERENCE,REPLACE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-159,N,PROTOCOL,INFERENCE,DELETE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-160,N,PROTOCOL,INFERENCE,REWIRE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-161,N,PROTOCOL,INFERENCE,MERGE,VALID,SILVER,S-PROTOCOL;C-SILVER,协议级候选可运行，但最高为 Silver；必须保持数据划分、指标、预算和评估脚本不变。,通过全局硬门后进入普通执行队列；不得因 Silver 降低实验记录与公平比较要求。
+N-162,N,PROTOCOL,INFERENCE,SPLIT,VALID,HOLD,S-PROTOCOL;H-PROTOCOL-SPLIT,协议拆分会增加比较口径或执行路径，必须先证明 Benchmark 仍唯一且可比。,证明 Benchmark、预算和评估脚本保持不变，再重新评为 Silver。

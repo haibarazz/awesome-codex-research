@@ -1,0 +1,89 @@
+{
+  "accepted": true,
+  "allowed_next_actions": [
+    "inspect",
+    "validate"
+  ],
+  "result": {
+    "active_frontier": [
+      {
+        "node_id": "RN-0003",
+        "priority": "GOLD",
+        "title": "Calibration-loss replacement"
+      }
+    ],
+    "active_run": null,
+    "audit_counters": {
+      "stage_reflections": 1,
+      "subagent_calls": 0
+    },
+    "benchmark_id": "golden-benchmark-v1",
+    "budget": {
+      "consumed": {
+        "attempts_started": 1,
+        "cost": 1.0,
+        "experiments_started": 1,
+        "run_seconds": 301.0
+      },
+      "limits": {
+        "cost_unit": "GPU_HOURS",
+        "max_cost": 12.0,
+        "max_experiments": 4,
+        "max_run_seconds": 4000.0
+      },
+      "new_experiment_limit_reached": false,
+      "terminal": false,
+      "time_or_cost_exhausted": false
+    },
+    "command": "inspect",
+    "controller_status": "CONTINUE",
+    "current_phase": "CANDIDATE_DESIGN",
+    "last_trigger": "CANDIDATES_READY",
+    "node_counts": {
+      "literature": 1,
+      "research": 3
+    },
+    "primary_metric": {
+      "branch_replacement_tolerance": 0.001,
+      "direction": "MAXIMIZE",
+      "fast_run_seconds": 300.0,
+      "metric_id": "auc",
+      "promotion_threshold": 0.005,
+      "simplification_tolerance": 0.005,
+      "target": 0.9
+    },
+    "project_id": "golden-tabular-auc",
+    "promotion_confirmation_policy": {
+      "mode": "SINGLE_RUN_JUSTIFIED",
+      "single_run_justification": "The frozen full run exceeds the five-minute qualification threshold.",
+      "single_run_threshold": {
+        "resource": "DURATION_SECONDS",
+        "value": 300.0
+      }
+    },
+    "reference_baseline_ids": [],
+    "roles": {
+      "anchor_baseline": {
+        "node_id": "RN-0001",
+        "primary_value": 0.8,
+        "title": "Stable small MLP"
+      },
+      "champion": {
+        "node_id": "RN-0002",
+        "primary_value": 0.812,
+        "title": "Frequency-aware weighting replacement"
+      },
+      "research_base": {
+        "node_id": "RN-0002",
+        "primary_value": 0.812,
+        "single_seed_provisional": true,
+        "title": "Frequency-aware weighting replacement"
+      }
+    },
+    "validation": {
+      "valid": true,
+      "violations": []
+    }
+  },
+  "revision": 10
+}
