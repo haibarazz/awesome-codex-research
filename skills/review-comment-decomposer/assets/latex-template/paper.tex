@@ -1,0 +1,112 @@
+%% 通用示例模板：以下评论均为虚构示例，使用时替换为用户的真实审稿原文。
+%% 保留原评论编号。下方表格表示拟修改内容，不表示工作已经完成。
+
+%% 尊敬的编辑和审稿人：
+Dear Editor and Reviewers:
+
+%% [开头说明占位符：在此填写论文题目和稿件编号。]
+[Opening statement, manuscript title, and manuscript ID to be completed.]
+
+%% 此致，[作者署名待填写。]
+Yours sincerely,\par
+[Author names]
+
+%% 表格按拟修改章节关联原评论；同一行可对应多条评论。
+\begingroup
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{3.5pt}
+\setlength{\LTpre}{5pt}
+\setlength{\LTpost}{6pt}
+\begin{longtable}{
+>{\raggedright\arraybackslash}p{2.6cm}
+>{\raggedright\arraybackslash}p{3.3cm}
+>{\raggedright\arraybackslash}p{9.0cm}}
+%% 拟修改内容汇总（占位符）。
+\caption{Summary of Planned Revisions (Placeholders)}
+\label{tab:revision_summary}\\
+\toprule
+%% 论文章节；关联评论；拟修改内容。
+\textbf{Manuscript Section} & \textbf{Related Comments} & \textbf{Planned Revision} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{c}{\textit{Table~\thetable\ continued from the previous page}}\\
+\toprule
+\textbf{Manuscript Section} & \textbf{Related Comments} & \textbf{Planned Revision} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\textit{Continued on the next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+{[Section to be verified]} & R1-C1 & [Proposed clarification; not yet completed.]\\
+\midrule
+{[Section to be verified]} & R1-C2; R2-C1 & [Shared analysis to be planned; results pending.]\\
+\end{longtable}
+\endgroup
+
+\clearpage
+%% 对审稿人 1 的回复。
+\section*{Response to Reviewer 1}
+
+%% 评论 1。
+\subsection*{Comment 1}
+\begin{cmt}{}{}
+%% 中文忠实翻译：
+%% 请定义目标总体，并说明为什么所选评估指标适用于该总体。
+Please define the target population and explain why the chosen evaluation metric is appropriate for that population.
+\end{cmt}
+
+%% 建议回复逻辑（供作者参考）：
+%% 核对总体与纳入标准 → 将评估指标对应到研究目标 → 据此确定需要补充的定义与解释。
+\responseheading{1}
+
+%% 原子问题 R1-C1-a：目标总体如何定义？
+%% 小标题中文：目标总体。
+\textbf{(a) Target Population}\par
+\responseplaceholder
+
+%% 原子问题 R1-C1-b：为什么所选评估指标适用于该总体？
+%% 小标题中文：评估指标的适用性。
+\textbf{(b) Suitability of the Evaluation Metric}\par
+\responseplaceholder
+
+%% 评论 2。
+\subsection*{Comment 2}
+\begin{cmt}{}{}
+%% 中文忠实翻译：
+%% 仅凭总体结果，无法判断该方法对历史记录有限的用户是否也表现良好。
+%% 请提供按历史记录长度划分的评估。
+The aggregate results do not establish whether the method also performs well for users with limited history. Please provide an evaluation by history length.
+\end{cmt}
+
+%% 建议回复逻辑（供作者参考）：
+%% 核对是否已有历史长度分组结果 → 如有缺口则规划分组评估 → 待结果核实后界定适用范围；关联 R2-C1。
+\responseheading{2}
+
+%% 原子问题 R1-C2-a：不同历史记录长度下的方法表现如何？共享组 G1，关联 R2-C1-a。
+%% 小标题中文：按历史记录长度划分的表现。
+\textbf{(a) Performance by History Length}\par
+\responseplaceholder
+
+\clearpage
+%% 对审稿人 2 的回复。
+\section*{Response to Reviewer 2}
+
+%% 评论 1。
+\subsection*{Comment 1}
+\begin{cmt}{}{}
+%% 中文忠实翻译：
+%% 该方法对历史记录较短的用户可能效果较差。你们能否按历史记录长度报告结果？
+The method may be less effective for users with short histories. Could you report results by history length?
+\end{cmt}
+
+%% 建议回复逻辑（供作者参考）：
+%% 复用 R1-C2 的历史长度分组评估 → 根据核实结果回应潜在表现差异 → 统一相关适用范围表述。
+\responseheading{1}
+
+%% 原子问题 R2-C1-a：能否用分组结果评估短历史用户的表现？共享组 G1，关联 R1-C2-a。
+%% 小标题中文：短历史用户的表现。
+\textbf{(a) Performance for Users with Short Histories}\par
+\responseplaceholder

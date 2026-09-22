@@ -1,0 +1,4 @@
+interface:
+  display_name: "审稿拆解与回复规划"
+  short_description: "拆解原子问题、安排实验和回复两条线，生成双语注释 LaTeX 骨架"
+  default_prompt: "使用 $review-comment-decomposer 阅读论文与审稿意见，拆解最小原子问题，优先识别补实验事项，规划回复构思顺序，并生成每个 comment 一份参考逻辑、忠实中文注释放在英文上方的 LaTeX 回复骨架。"

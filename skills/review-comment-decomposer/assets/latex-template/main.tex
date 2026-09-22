@@ -1,0 +1,49 @@
+% !TeX program = pdflatex
+% Adapted from Academic Paper Response Letter, v1.0 (20/07/2023).
+% Original template author: Yuhan Xie. License: CC BY 4.0.
+% https://creativecommons.org/licenses/by/4.0/
+% https://liam.page/2016/07/22/using-the-tcolorbox-package-to-create-a-new-theorem-environment/
+% Changes: anonymized content, minimal packages, atomic-response skeleton.
+\documentclass{article}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{microtype}
+\usepackage[a4paper,top=2.5cm,bottom=2cm,left=1.7cm,right=1.7cm,marginparwidth=1.75cm]{geometry}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.3em}
+\raggedbottom
+
+\newtcolorbox{cmt}[2]{
+  breakable,
+  colback=gray!4,
+  colframe=black!45,
+  boxrule=0.5pt,
+  arc=1mm,
+  left=2mm,
+  right=2mm,
+  top=1.5mm,
+  bottom=1.5mm
+}
+
+\newcommand{\responseheading}[1]{%
+  \vspace{0.1cm}
+  \noindent\underline{\textbf{Response to Comment #1:}}\par
+  \vspace{0.2cm}
+}
+
+\newcommand{\responseplaceholder}{%
+  [Response to be completed.]\par
+  \vspace{0.35cm}
+}
+
+\begin{document}
+\input{paper}
+\end{document}

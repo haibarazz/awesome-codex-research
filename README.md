@@ -59,6 +59,15 @@
       <p>面向已有英文学术论文和段落的综合润色与审计，保护研究事实、主张强度、引文、术语和 LaTeX 结构，并检查论证、表达与 AI 写作痕迹。</p>
     </td>
   </tr>
+  <tr>
+    <td width="80" align="center" valign="middle">
+      <img src="docs/assets/review-comment-decomposer.png" alt="审稿意见拆解与回复规划插画" width="60">
+    </td>
+    <td valign="middle">
+      <h3>review-comment-decomposer Skill</h3>
+      <p>结合论文原文，将审稿意见拆成可核验的原子问题，规划补实验与回复构思两条工作线，并生成带中文注释的可编译 LaTeX 回复骨架。</p>
+    </td>
+  </tr>
 </table>
 
 完整来源、版本和本地改动记录见 [`docs/catalog.md`](docs/catalog.md)。
@@ -78,7 +87,8 @@
 ├── skills/                           # 不属于某个 plugin 的独立 Skill
 │   ├── intent-aligner/
 │   ├── auto-exp/
-│   └── academic-paper-polisher/
+│   ├── academic-paper-polisher/
+│   └── review-comment-decomposer/
 ├── dist/                             # 可直接分发的安装包
 │   └── academic-paper-polisher.skill
 ├── docs/                             # 目录、来源和视觉资源
