@@ -23,31 +23,31 @@
 
 <table>
   <tr>
-    <td width="68%">
+    <td width="80" align="center" valign="middle">
+      <img src="docs/assets/research-workflow-mascot.png" alt="科研工作流卡通插画" width="60">
+    </td>
+    <td valign="middle">
       <h3>AutoDL Remote Plugin</h3>
       <p>通过本地 CLI 和 MCP server 控制 AutoDL / SSH 远程机器，支持文件传输、远程命令、后台任务、实验 run metadata、fleet、tmux 和只读 dashboard。</p>
       <p><a href="https://github.com/haibarazz/AutoDL-Remote">查看原始上游仓库</a></p>
     </td>
-    <td width="32%" align="center">
-      <img src="docs/assets/research-workflow-mascot.png" alt="科研工作流卡通插画" width="60">
-    </td>
   </tr>
   <tr>
-    <td>
+    <td width="80" align="center" valign="middle">
+      <img src="docs/assets/intent-aligner.png" alt="intent-aligner 意图对齐插画" width="60">
+    </td>
+    <td valign="middle">
       <h3>intent-aligner Skill</h3>
       <p>在实现、实验、写作或规划之前做轻量意图对齐，明确目标、范围、默认假设和不做什么，减少工作流跑偏。</p>
     </td>
-    <td align="center">
-      <img src="docs/assets/intent-aligner.png" alt="intent-aligner 意图对齐插画" width="60">
-    </td>
   </tr>
   <tr>
-    <td>
+    <td width="80" align="center" valign="middle">
+      <img src="docs/assets/auto-exp.png" alt="机器学习实验工作流插画" width="60">
+    </td>
+    <td valign="middle">
       <h3>auto-exp Skill</h3>
       <p>面向机器学习实验的计划、执行、监控、验证、对比和记录，强调实验契约、可复现性与证据链。</p>
-    </td>
-    <td align="center">
-      <img src="docs/assets/auto-exp.png" alt="机器学习实验工作流插画" width="60">
     </td>
   </tr>
 </table>
