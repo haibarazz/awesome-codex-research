@@ -57,7 +57,6 @@
     <td valign="middle">
       <h3>academic-paper-polisher Skill</h3>
       <p>面向已有英文学术论文和段落的综合润色与审计，保护研究事实、主张强度、引文、术语和 LaTeX 结构，并检查论证、表达与 AI 写作痕迹。</p>
-      <p><a href="dist/academic-paper-polisher.skill">下载 .skill 安装包</a></p>
     </td>
   </tr>
 </table>
