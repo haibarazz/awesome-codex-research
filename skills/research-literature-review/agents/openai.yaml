@@ -1,0 +1,4 @@
+interface:
+  display_name: "CDS 研究定位与文献对话"
+  short_description: "从研究问题与数据挑战识别两条文献线，检索全文并形成可辩护定位"
+  default_prompt: "使用 $research-literature-review，根据我的数据和研究问题识别问题／理论视角与技术／算法两条文献对话线，检索并核验全文，最终说明研究定位。"

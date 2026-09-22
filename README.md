@@ -68,6 +68,15 @@
       <p>结合论文原文，将审稿意见拆成可核验的原子问题，规划补实验与回复构思两条工作线，并生成带中文注释的可编译 LaTeX 回复骨架。</p>
     </td>
   </tr>
+  <tr>
+    <td width="80" align="center" valign="middle">
+      <img src="docs/assets/research-literature-review.png" alt="研究定位与文献对话插画" width="60">
+    </td>
+    <td valign="middle">
+      <h3>research-literature-review Skill</h3>
+      <p>面向计算设计科学研究，从同一研究锚点建立问题／理论与技术／算法两条文献线，核验全文、制作对话地图，并澄清最近邻、理论祖先、方法缺口和研究定位。</p>
+    </td>
+  </tr>
 </table>
 
 完整来源、版本和本地改动记录见 [`docs/catalog.md`](docs/catalog.md)。
@@ -88,7 +97,8 @@
 │   ├── intent-aligner/
 │   ├── auto-exp/
 │   ├── academic-paper-polisher/
-│   └── review-comment-decomposer/
+│   ├── review-comment-decomposer/
+│   └── research-literature-review/
 ├── dist/                             # 可直接分发的安装包
 │   └── academic-paper-polisher.skill
 ├── docs/                             # 目录、来源和视觉资源

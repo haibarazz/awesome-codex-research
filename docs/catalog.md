@@ -20,6 +20,7 @@ imported tree was checked with `diff -qr`.
 | `auto-exp` | Codex standalone skill with experiment references | Import snapshot `2026-09-21` | `/Users/Zhuanz/Documents/code/互联网医院/auto-exp/skills/auto-exp` | Not declared in the imported skill | None at import time |
 | `academic-paper-polisher` | Codex standalone skill with UI metadata, writing references, scripts, and venue templates | Local build `2026-09-21` | `/Users/Zhuanz/.codex/skills/academic-paper-polisher` | No top-level license declared; bundled reference skills retain their own license metadata | None at import time |
 | `review-comment-decomposer` | Codex standalone skill with revision planning references and a LaTeX response template | Local build `2026-09-22` | `/Users/Zhuanz/.codex/skills/review-comment-decomposer` | Mixed: local original content, MIT reference material, and a CC BY 4.0 template; see provenance | None at import time |
+| `research-literature-review` | CDS literature-positioning skill with two-stream prompts and dialogue-map examples | Local build `2026-09-22` | `/Volumes/haibara/Haibara/research/research-literature-review` | Not declared in the source folder | Functional files copied unchanged; `.DS_Store` omitted |
 
 The `academic-paper-polisher` source tree was copied without modification. Its
 93 files match the supplied distributable archive at
