@@ -86,6 +86,15 @@
       <p>在冻结 Research Brief、Benchmark 和预算后，自主完成文献机制分析、候选设计、预登记实验、运行修复、实验图路由与阶段反思，直到达到目标或耗尽预登记预算。</p>
     </td>
   </tr>
+  <tr>
+    <td width="80" align="center" valign="middle">
+      <img src="docs/assets/cds-method-innovation.png" alt="计算数据科学方法创新工作流插画" width="60">
+    </td>
+    <td valign="middle">
+      <h3>cds-method-innovation Skill</h3>
+      <p>面向计算数据科学方法创新，按阶段完成研究方向发现、常见与近期 baseline 实跑、公平 benchmark、候选创新质询、实验设计与证据记录，并保留方向决策和每次运行历史。</p>
+    </td>
+  </tr>
 </table>
 
 完整来源、版本和本地改动记录见 [`docs/catalog.md`](docs/catalog.md)。
@@ -108,7 +117,8 @@
 │   ├── academic-paper-polisher/
 │   ├── review-comment-decomposer/
 │   ├── research-literature-review/
-│   └── autoresearch/
+│   ├── autoresearch/
+│   └── cds-method-innovation/
 ├── dist/                             # 可直接分发的安装包
 │   └── academic-paper-polisher.skill
 ├── docs/                             # 目录、来源和视觉资源

@@ -1,0 +1,4 @@
+interface:
+  display_name: "CDS 方法创新工作流"
+  short_description: "从研究方向、基线对比到创新质询和实验验证，持续保留研究决策与运行记录"
+  default_prompt: "使用 $cds-method-innovation 接续当前研究项目，先检查已有方向和实验记录，再按 baseline-first 工作流推进。"
