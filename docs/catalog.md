@@ -17,6 +17,7 @@ imported tree was checked with `diff -qr`.
 | Name | Type | Source | Local changes |
 | --- | --- | --- | --- |
 | `intent-aligner` | Codex standalone skill with `agents/openai.yaml` | Local Codex skill at import time | None at import time |
+| `auto-exp` | Codex standalone skill with experiment references | `/Users/Zhuanz/Documents/code/互联网医院/auto-exp/skills/auto-exp` | None at import time |
 
 Add standalone skills only when they are not owned by a plugin already present
 in this repository.

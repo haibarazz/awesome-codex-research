@@ -29,7 +29,7 @@
       <p><a href="https://github.com/haibarazz/AutoDL-Remote">查看原始上游仓库</a></p>
     </td>
     <td width="32%" align="center">
-      <img src="docs/assets/research-workflow-mascot.png" alt="科研工作流卡通插画" width="180">
+      <img src="docs/assets/research-workflow-mascot.png" alt="科研工作流卡通插画" width="60">
     </td>
   </tr>
   <tr>
@@ -38,7 +38,16 @@
       <p>在实现、实验、写作或规划之前做轻量意图对齐，明确目标、范围、默认假设和不做什么，减少工作流跑偏。</p>
     </td>
     <td align="center">
-      <img src="docs/assets/intent-aligner.png" alt="intent-aligner 意图对齐插画" width="180">
+      <img src="docs/assets/intent-aligner.png" alt="intent-aligner 意图对齐插画" width="60">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h3>auto-exp Skill</h3>
+      <p>面向机器学习实验的计划、执行、监控、验证、对比和记录，强调实验契约、可复现性与证据链。</p>
+    </td>
+    <td align="center">
+      <img src="docs/assets/auto-exp.png" alt="机器学习实验工作流插画" width="60">
     </td>
   </tr>
 </table>
@@ -58,7 +67,8 @@
 │       ├── bin/
 │       └── config/
 ├── skills/                           # 不属于某个 plugin 的独立 Skill
-│   └── intent-aligner/
+│   ├── intent-aligner/
+│   └── auto-exp/
 ├── docs/                             # 目录、来源和视觉资源
 └── scripts/                          # 本地验证脚本
 ```
