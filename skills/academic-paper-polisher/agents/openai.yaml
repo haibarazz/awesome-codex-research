@@ -1,0 +1,4 @@
+interface:
+  display_name: "Academic Paper Polisher"
+  short_description: "Polish existing English papers and pasted passages safely"
+  default_prompt: "Use $academic-paper-polisher to polish this existing English manuscript or pasted academic passage while preserving claims, evidence, citations, terminology, and source structure."

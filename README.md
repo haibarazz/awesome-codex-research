@@ -50,6 +50,16 @@
       <p>面向机器学习实验的计划、执行、监控、验证、对比和记录，强调实验契约、可复现性与证据链。</p>
     </td>
   </tr>
+  <tr>
+    <td width="80" align="center" valign="middle">
+      <img src="docs/assets/academic-paper-polisher.png" alt="英文学术论文润色插画" width="60">
+    </td>
+    <td valign="middle">
+      <h3>academic-paper-polisher Skill</h3>
+      <p>面向已有英文学术论文和段落的综合润色与审计，保护研究事实、主张强度、引文、术语和 LaTeX 结构，并检查论证、表达与 AI 写作痕迹。</p>
+      <p><a href="dist/academic-paper-polisher.skill">下载 .skill 安装包</a></p>
+    </td>
+  </tr>
 </table>
 
 完整来源、版本和本地改动记录见 [`docs/catalog.md`](docs/catalog.md)。
@@ -68,7 +78,10 @@
 │       └── config/
 ├── skills/                           # 不属于某个 plugin 的独立 Skill
 │   ├── intent-aligner/
-│   └── auto-exp/
+│   ├── auto-exp/
+│   └── academic-paper-polisher/
+├── dist/                             # 可直接分发的安装包
+│   └── academic-paper-polisher.skill
 ├── docs/                             # 目录、来源和视觉资源
 └── scripts/                          # 本地验证脚本
 ```
